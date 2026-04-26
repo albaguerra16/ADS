@@ -2,812 +2,2779 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>American Direct</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Montserrat', system-ui, sans-serif; background: #F5F3EE; }
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
-input[type=number] { -moz-appearance: textfield; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Montserrat',system-ui,sans-serif;background:#F5F3EE}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div id="root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888;font-size:13px">Cargando...</div></div>
-<script>
-// Make Recharts components available
-const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line } = Recharts;
-</script>
-<script type="text/babel" data-presets="react">
-
-const storage = {
-  get(key) { try { const v=localStorage.getItem(key); return v?{value:v}:null } catch{return null} },
-  set(key,value) { try{localStorage.setItem(key,value);return true}catch{return false} },
-  delete(key) { try{localStorage.removeItem(key);return true}catch{return false} },
-  list(prefix='') { try{const keys=Object.keys(localStorage).filter(k=>k.startsWith(prefix));return{keys}}catch{return{keys:[]}} }
+<div id="root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;color:#888;font-family:sans-serif;font-size:13px"><div style="width:28px;height:28px;border:3px solid #E2DED8;border-top-color:#0D1F4A;border-radius:50%;animation:spin 1s linear infinite"></div>Cargando...</div></div>
+<script>const {BarChart,Bar,XAxis,YAxis,Tooltip,ResponsiveContainer,Cell}=Recharts;</script>
+<script>const storage = {
+  get(key) {
+    try {
+      const v = localStorage.getItem(key);
+      return v ? {
+        value: v
+      } : null;
+    } catch (e) {
+      return null;
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+  list(prefix2) {
+    prefix2 = prefix2 || '';
+    try {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith(prefix2));
+      return {
+        keys
+      };
+    } catch (e) {
+      return {
+        keys: []
+      };
+    }
+  }
+};</script>
+<script>const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const MESES_C = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+const fmt = v => Math.round(v || 0).toLocaleString('es-CO');
+const n = v => parseFloat(v) || 0;
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+const EMPTY_V = {
+  cliente: '',
+  producto: '',
+  venta: '',
+  costoProducto: '',
+  envioTotal: '',
+  envioCliente: ''
 };
-
-
-
-const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-const MESES_C = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-
-const fmt = v => Math.round(v || 0).toLocaleString('es-CO')
-const n = v => parseFloat(v) || 0
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2)
-
-const EMPTY_V = { cliente: '', producto: '', venta: '', costoProducto: '', envioTotal: '', envioCliente: '' }
-const EMPTY_G = { bolsas: '', metaAds: '', suscripciones: '', viajesMiami: '', otros: '' }
-
+const EMPTY_G = {
+  bolsas: '',
+  metaAds: '',
+  suscripciones: '',
+  viajesMiami: '',
+  otros: ''
+};
 function calcV(v) {
-  const venta = n(v.venta), cp = n(v.costoProducto)
-  const et = n(v.envioTotal), ec = n(v.envioCliente)
-  const em = Math.max(et - ec, 0)
-  const costo = cp + em
-  const gan = venta - costo
-  return { venta, cp, et, ec, em, costo, gan, margen: venta > 0 ? gan/venta*100 : 0 }
+  const venta = n(v.venta),
+    cp = n(v.costoProducto);
+  const et = n(v.envioTotal),
+    ec = n(v.envioCliente);
+  const em = Math.max(et - ec, 0);
+  const costo = cp + em;
+  const gan = venta - costo;
+  return {
+    venta,
+    cp,
+    et,
+    ec,
+    em,
+    costo,
+    gan,
+    margen: venta > 0 ? gan / venta * 100 : 0
+  };
 }
-
 function Dashboard() {
-  const hoy = new Date()
-  const [year, setYear] = useState(hoy.getFullYear())
-  const [month, setMonth] = useState(hoy.getMonth())
-  const [tab, setTab] = useState('ventas')
-  const [ventas, setVentas] = useState([])
-  const [gastos, setGastos] = useState(EMPTY_G)
-  const [allV, setAllV] = useState({})
-  const [allG, setAllG] = useState({})
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState(EMPTY_V)
-  const [editId, setEditId] = useState(null)
-  const [saving, setSaving] = useState(false)
-
-  const vk = `ad_v_${year}_${String(month+1).padStart(2,'0')}`
-  const gk = `ad_g_${year}_${String(month+1).padStart(2,'0')}`
-
+  const hoy = new Date();
+  const [year, setYear] = useState(hoy.getFullYear());
+  const [month, setMonth] = useState(hoy.getMonth());
+  const [tab, setTab] = useState('ventas');
+  const [ventas, setVentas] = useState([]);
+  const [gastos, setGastos] = useState(EMPTY_G);
+  const [allV, setAllV] = useState({});
+  const [allG, setAllG] = useState({});
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_V);
+  const [editId, setEditId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const vk = `ad_v_${year}_${String(month + 1).padStart(2, '0')}`;
+  const gk = `ad_g_${year}_${String(month + 1).padStart(2, '0')}`;
   useEffect(() => {
     // load all keys for chart
-    const av = {}, ag = {}
-    storage.list('ad_v_').keys.forEach(k => { const r = storage.get(k); if (r) try { av[k] = JSON.parse(r.value) } catch {} })
-    storage.list('ad_g_').keys.forEach(k => { const r = storage.get(k); if (r) try { ag[k] = JSON.parse(r.value) } catch {} })
-    setAllV(av); setAllG(ag)
-  }, [])
-
+    const av = {},
+      ag = {};
+    storage.list('ad_v_').keys.forEach(k => {
+      const r = storage.get(k);
+      if (r) try {
+        av[k] = JSON.parse(r.value);
+      } catch {}
+    });
+    storage.list('ad_g_').keys.forEach(k => {
+      const r = storage.get(k);
+      if (r) try {
+        ag[k] = JSON.parse(r.value);
+      } catch {}
+    });
+    setAllV(av);
+    setAllG(ag);
+  }, []);
   useEffect(() => {
-    const rv = storage.get(vk), rg = storage.get(gk)
-    setVentas(rv ? JSON.parse(rv.value) : [])
-    setGastos(rg ? { ...EMPTY_G, ...JSON.parse(rg.value) } : EMPTY_G)
-  }, [year, month])
-
+    const rv = storage.get(vk),
+      rg = storage.get(gk);
+    setVentas(rv ? JSON.parse(rv.value) : []);
+    setGastos(rg ? {
+      ...EMPTY_G,
+      ...JSON.parse(rg.value)
+    } : EMPTY_G);
+  }, [year, month]);
   function saveVentas(data) {
-    setSaving(true)
-    storage.set(vk, JSON.stringify(data))
-    setAllV(p => ({ ...p, [vk]: data }))
-    setTimeout(() => setSaving(false), 500)
+    setSaving(true);
+    storage.set(vk, JSON.stringify(data));
+    setAllV(p => ({
+      ...p,
+      [vk]: data
+    }));
+    setTimeout(() => setSaving(false), 500);
   }
   function saveGastos(data) {
-    storage.set(gk, JSON.stringify(data))
-    setAllG(p => ({ ...p, [gk]: data }))
+    storage.set(gk, JSON.stringify(data));
+    setAllG(p => ({
+      ...p,
+      [gk]: data
+    }));
   }
-
-  const prevMes = () => { if (month===0){setMonth(11);setYear(y=>y-1)}else setMonth(m=>m-1) }
-  const nextMes = () => { if (month===11){setMonth(0);setYear(y=>y+1)}else setMonth(m=>m+1) }
-
+  const prevMes = () => {
+    if (month === 0) {
+      setMonth(11);
+      setYear(y => y - 1);
+    } else setMonth(m => m - 1);
+  };
+  const nextMes = () => {
+    if (month === 11) {
+      setMonth(0);
+      setYear(y => y + 1);
+    } else setMonth(m => m + 1);
+  };
   function saveVenta() {
-    if (!form.cliente || !form.venta) return
-    const entry = { id: editId || uid(), ...form }
-    const nuevo = editId ? ventas.map(v => v.id===editId ? entry : v) : [...ventas, entry]
-    setVentas(nuevo); saveVentas(nuevo)
-    setShowForm(false); setForm(EMPTY_V); setEditId(null)
+    if (!form.cliente || !form.venta) return;
+    const entry = {
+      id: editId || uid(),
+      ...form
+    };
+    const nuevo = editId ? ventas.map(v => v.id === editId ? entry : v) : [...ventas, entry];
+    setVentas(nuevo);
+    saveVentas(nuevo);
+    setShowForm(false);
+    setForm(EMPTY_V);
+    setEditId(null);
   }
-
   function changeGasto(field, val) {
-    const ng = { ...gastos, [field]: val }
-    setGastos(ng); saveGastos(ng)
+    const ng = {
+      ...gastos,
+      [field]: val
+    };
+    setGastos(ng);
+    saveGastos(ng);
   }
 
   // Aggregates
   const agg = ventas.reduce((a, v) => {
-    const c = calcV(v)
-    return { ...a, ventas: a.ventas+c.venta, cp: a.cp+c.cp, et: a.et+c.et, ec: a.ec+c.ec, em: a.em+c.em, costo: a.costo+c.costo, gan: a.gan+c.gan }
-  }, { ventas:0, cp:0, et:0, ec:0, em:0, costo:0, gan:0 })
-
-  const gastosFijos = Object.values(gastos).reduce((s,v) => s+n(v), 0)
-  const neta = agg.gan - gastosFijos
-  const margen = agg.ventas > 0 ? neta/agg.ventas*100 : 0
-  const mc = margen >= 20 ? '#059669' : margen >= 10 ? '#d97706' : '#dc2626'
-
-  const chartData = Array.from({length:6}, (_,i) => {
-    let m=month-(5-i), y=year; while(m<0){m+=12;y--}
-    const cvk=`ad_v_${y}_${String(m+1).padStart(2,'0')}`, cgk=`ad_g_${y}_${String(m+1).padStart(2,'0')}`
-    const vs=allV[cvk]||[], gs=allG[cgk]||{}
-    const tv=vs.reduce((s,v)=>s+n(v.venta),0)
-    const gb=vs.reduce((s,v)=>{const c=calcV(v);return s+c.gan},0)
-    const go=Object.values(gs).reduce((s,v)=>s+n(v),0)
-    return {label:MESES_C[m], neta: tv>0 ? gb-go : null}
-  })
-
-  const lc = calcV(form)
-
-  return (
-    <div>
-      {/* MES */}
-      <div style={{background:'#fff',borderBottom:'1px solid #E8E5DF',padding:'11px 18px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <button onClick={prevMes} style={nbS}>‹</button>
-        <div style={{textAlign:'center'}}>
-          <div style={{fontSize:16,fontWeight:700,color:'#1a1a2e'}}>{MESES[month]} {year}</div>
-          <div style={{fontSize:10,color:'#bbb',marginTop:1}}>{ventas.length} ventas · ${fmt(agg.ventas)} COP {saving && '· Guardando...'}</div>
-        </div>
-        <button onClick={nextMes} style={nbS}>›</button>
-      </div>
-
-      {/* SUBTABS */}
-      <div style={{background:'#fff',borderBottom:'1px solid #E8E5DF',display:'flex'}}>
-        {[['ventas','📋 Ventas'],['envios','📦 Envíos'],['resumen','📊 Resumen']].map(([id,label])=>(
-          <button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:'11px 4px',border:'none',borderBottom:tab===id?'3px solid #0D1F4A':'3px solid transparent',background:'none',cursor:'pointer',fontSize:11,fontWeight:700,color:tab===id?'#0D1F4A':'#aaa',letterSpacing:'.04em',transition:'all .15s'}}>{label}</button>
-        ))}
-      </div>
-
-      <div style={{padding:'14px 14px 20px',maxWidth:680,margin:'0 auto'}}>
-
-        {/* VENTAS TAB */}
-        {tab==='ventas' && <>
-          {ventas.length>0 && (
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:14}}>
-              <MC label="Ventas" val={`$${fmt(agg.ventas)}`} c="#0D1F4A"/>
-              <MC label="Costo real" val={`$${fmt(agg.costo)}`} c="#C8102E"/>
-              <MC label="Ganancia" val={`$${fmt(agg.gan)}`} c="#059669"/>
-            </div>
-          )}
-          <button onClick={()=>{setForm(EMPTY_V);setEditId(null);setShowForm(true)}} style={{width:'100%',padding:13,background:'#0D1F4A',color:'#fff',border:'none',borderRadius:10,fontSize:13,fontWeight:700,cursor:'pointer',marginBottom:14}}>
-            + Agregar venta
-          </button>
-
-          {showForm && (
-            <div style={{background:'#fff',borderRadius:12,border:'2px solid #0D1F4A',padding:16,marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:700,color:'#0D1F4A',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:14}}>{editId?'Editar venta':'Nueva venta'}</div>
-              <FF label="Cliente *" val={form.cliente} set={v=>setForm(f=>({...f,cliente:v}))} ph="ej: ISAURA"/>
-              <FF label="Producto (opcional)" val={form.producto} set={v=>setForm(f=>({...f,producto:v}))} ph="ej: Nike Air Max"/>
-              <Div label="Precios"/>
-              <FF label="Precio de venta al cliente (COP) *" val={form.venta} set={v=>setForm(f=>({...f,venta:v}))} ph="ej: 670000" type="number"/>
-              <FF label="Costo del producto (COP)" val={form.costoProducto} set={v=>setForm(f=>({...f,costoProducto:v}))} ph="ej: 450000" type="number"/>
-              <Div label="Envío — ¿quién paga qué?"/>
-              <FF label="Envío total casillero (COP)" val={form.envioTotal} set={v=>setForm(f=>({...f,envioTotal:v}))} ph="ej: 80000" type="number" hint="Costo real que cobró el casillero"/>
-              <FF label="Envío cobrado al cliente (COP)" val={form.envioCliente} set={v=>setForm(f=>({...f,envioCliente:v}))} ph="ej: 30000" type="number" hint="Parte incluida en el precio de venta"/>
-              {(n(form.venta)>0||n(form.envioTotal)>0) && (
-                <div style={{background:'#F0F5FF',borderRadius:10,padding:'12px 14px',marginBottom:12}}>
-                  <div style={{fontSize:9,fontWeight:700,color:'#0D1F4A',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:8}}>Vista previa</div>
-                  {[['Precio de venta',`$${fmt(lc.venta)}`],['Costo producto',`−$${fmt(lc.cp)}`,true],lc.em>0&&[`Envío mío (${fmt(lc.et)}−${fmt(lc.ec)})`,`−$${fmt(lc.em)}`,true]].filter(Boolean).map(([l,v,r])=>(
-                    <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'2px 0'}}><span style={{fontSize:11,color:'#555'}}>{l}</span><span style={{fontSize:11,fontWeight:500,color:r?'#C8102E':'#1a1a2e'}}>{v}</span></div>
-                  ))}
-                  <div style={{height:1,background:'#C8D8F0',margin:'8px 0'}}/>
-                  <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:12,fontWeight:700,color:'#0D1F4A'}}>Ganancia</span><span style={{fontSize:14,fontWeight:700,color:lc.gan>=0?'#059669':'#dc2626'}}>${fmt(lc.gan)} ({lc.margen.toFixed(1)}%)</span></div>
-                </div>
-              )}
-              <div style={{display:'flex',gap:8}}>
-                <button onClick={saveVenta} style={{flex:2,padding:11,background:'#0D1F4A',color:'#fff',border:'none',borderRadius:8,fontSize:13,fontWeight:700,cursor:'pointer'}}>{editId?'Guardar cambios':'Agregar'}</button>
-                <button onClick={()=>{setShowForm(false);setForm(EMPTY_V);setEditId(null)}} style={{flex:1,padding:11,background:'#f4f5f7',color:'#666',border:'none',borderRadius:8,fontSize:13,cursor:'pointer'}}>Cancelar</button>
-              </div>
-            </div>
-          )}
-
-          {ventas.length===0 ? (
-            <div style={{textAlign:'center',padding:'40px 20px',color:'#bbb'}}>
-              <div style={{fontSize:32,marginBottom:8}}>📋</div>
-              <div style={{fontSize:13}}>Sin ventas este mes</div>
-            </div>
-          ) : (
-            <div style={{background:'#fff',borderRadius:12,border:'1px solid #E8E5DF',overflow:'hidden'}}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 70px 70px 70px 36px',padding:'8px 12px',background:'#0D1F4A'}}>
-                {['Cliente','Venta','Costo','Gan.',''].map((h,i)=>(
-                  <div key={i} style={{fontSize:9,fontWeight:700,color:'rgba(255,255,255,.55)',letterSpacing:'.1em',textTransform:'uppercase',textAlign:i>0?'right':'left'}}>{h}</div>
-                ))}
-              </div>
-              {ventas.map((v,i)=>{
-                const c=calcV(v)
-                return (
-                  <div key={v.id} style={{display:'grid',gridTemplateColumns:'1fr 70px 70px 70px 36px',padding:'11px 12px',borderBottom:i<ventas.length-1?'1px solid #F4F2EE':'none',alignItems:'center'}}>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:600,color:'#1a1a2e'}}>{v.cliente}</div>
-                      {v.producto&&<div style={{fontSize:10,color:'#aaa',marginTop:1}}>{v.producto}</div>}
-                      {c.em>0&&<div style={{fontSize:9,color:'#d97706',marginTop:2}}>📦 Envío mío: ${fmt(c.em)}</div>}
-                    </div>
-                    <div style={{textAlign:'right',fontSize:12,fontWeight:500}}>${fmt(c.venta)}</div>
-                    <div style={{textAlign:'right',fontSize:12,color:'#C8102E'}}>${fmt(c.costo)}</div>
-                    <div style={{textAlign:'right',fontSize:12,fontWeight:700,color:c.gan>=0?'#059669':'#dc2626'}}>${fmt(c.gan)}</div>
-                    <div style={{display:'flex',flexDirection:'column',gap:3,alignItems:'flex-end'}}>
-                      <button onClick={()=>{setForm({cliente:v.cliente,producto:v.producto||'',venta:v.venta,costoProducto:v.costoProducto||'',envioTotal:v.envioTotal||'',envioCliente:v.envioCliente||''});setEditId(v.id);setShowForm(true)}} style={{background:'none',border:'none',cursor:'pointer',fontSize:13,padding:'0 2px'}}>✏️</button>
-                      <button onClick={()=>{const nd=ventas.filter(x=>x.id!==v.id);setVentas(nd);saveVentas(nd)}} style={{background:'none',border:'none',cursor:'pointer',fontSize:13,padding:'0 2px'}}>🗑️</button>
-                    </div>
-                  </div>
-                )
-              })}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 70px 70px 70px 36px',padding:'11px 12px',background:'#F5F3EE',borderTop:'2px solid #E8E5DF'}}>
-                <div style={{fontSize:11,fontWeight:700,color:'#666',letterSpacing:'.08em',textTransform:'uppercase'}}>TOTAL</div>
-                <div style={{textAlign:'right',fontSize:12,fontWeight:700}}>${fmt(agg.ventas)}</div>
-                <div style={{textAlign:'right',fontSize:12,fontWeight:700,color:'#C8102E'}}>${fmt(agg.costo)}</div>
-                <div style={{textAlign:'right',fontSize:12,fontWeight:700,color:'#059669'}}>${fmt(agg.gan)}</div>
-                <div/>
-              </div>
-            </div>
-          )}
-        </>}
-
-        {/* ENVIOS TAB */}
-        {tab==='envios' && <>
-          <div style={{background:'#fff',borderRadius:12,border:'1px solid #E8E5DF',overflow:'hidden',marginBottom:14}}>
-            <div style={{padding:'12px 15px',background:'#0D1F4A'}}>
-              <div style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,.7)',letterSpacing:'.1em',textTransform:'uppercase'}}>Resumen de envíos — {MESES[month]}</div>
-            </div>
-            <ER label="Envío total pagado al casillero" val={agg.et} color="#1a1a2e" big/>
-            <ER label="Envío cobrado a clientes" val={agg.ec} color="#059669" sub="Recuperado — incluido en el precio de venta"/>
-            <ER label="Envío a mi cargo (absorbí yo)" val={agg.em} color="#C8102E" sub="Sale de mi bolsillo — reduce mi ganancia"/>
-            {agg.et>0&&(
-              <div style={{padding:'12px 15px',borderTop:'1px solid #F4F2EE'}}>
-                <div style={{fontSize:10,color:'#aaa',fontWeight:600,marginBottom:8,letterSpacing:'.06em',textTransform:'uppercase'}}>¿Cómo se dividió?</div>
-                <div style={{height:10,background:'#f0f0ee',borderRadius:5,overflow:'hidden',display:'flex'}}>
-                  <div style={{width:`${agg.ec/agg.et*100}%`,background:'#059669',transition:'width .4s'}}/>
-                  <div style={{flex:1,background:'#C8102E'}}/>
-                </div>
-                <div style={{display:'flex',justifyContent:'space-between',marginTop:8,fontSize:11}}>
-                  <span style={{color:'#059669',fontWeight:600}}>Cliente pagó {(agg.ec/agg.et*100).toFixed(0)}%</span>
-                  <span style={{color:'#C8102E',fontWeight:600}}>Yo absorbí {(agg.em/agg.et*100).toFixed(0)}%</span>
-                </div>
-              </div>
-            )}
-          </div>
-          {ventas.filter(v=>n(v.envioTotal)>0).map((v,i,arr)=>{
-            const c=calcV(v)
-            return (
-              <div key={v.id} style={{background:'#fff',borderRadius:10,border:'1px solid #E8E5DF',padding:'12px 14px',marginBottom:8}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
-                  <div><div style={{fontSize:13,fontWeight:600,color:'#1a1a2e'}}>{v.cliente}</div>{v.producto&&<div style={{fontSize:10,color:'#aaa'}}>{v.producto}</div>}</div>
-                  <span style={{fontSize:13,fontWeight:700}}>Total: ${fmt(c.et)}</span>
-                </div>
-                <div style={{display:'flex',gap:16,marginBottom:6}}>
-                  <span style={{fontSize:12,color:'#059669',fontWeight:600}}>↑ Cliente: ${fmt(c.ec)}</span>
-                  <span style={{fontSize:12,color:'#C8102E',fontWeight:600}}>↓ Yo: ${fmt(c.em)}</span>
-                </div>
-                {c.et>0&&<div style={{height:6,background:'#f0f0ee',borderRadius:3,overflow:'hidden',display:'flex'}}><div style={{width:`${c.ec/c.et*100}%`,background:'#059669'}}/><div style={{flex:1,background:'#C8102E'}}/></div>}
-              </div>
-            )
-          })}
-          {ventas.filter(v=>n(v.envioTotal)>0).length===0&&<div style={{textAlign:'center',padding:'40px 20px',color:'#bbb'}}><div style={{fontSize:32,marginBottom:8}}>📦</div><div style={{fontSize:13}}>Agrega ventas con envío para ver el desglose</div></div>}
-        </>}
-
-        {/* RESUMEN TAB */}
-        {tab==='resumen' && <>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
-            <Card label="Ventas totales" val={`$${fmt(agg.ventas)}`} sub={`${ventas.length} productos`} accent="#0D1F4A"/>
-            <Card label="Ganancia neta" val={`$${fmt(neta)}`} sub={`Margen ${margen.toFixed(1)}%`} accent={mc} border={`2px solid ${mc}`}/>
-            <Card label="Ganancia bruta" val={`$${fmt(agg.gan)}`} sub="Antes de gastos fijos" accent="#555"/>
-            <Card label="Envío absorbido" val={`$${fmt(agg.em)}`} sub="Sale de mi ganancia" accent="#d97706"/>
-          </div>
-
-          {agg.ventas>0&&(
-            <div style={{background:'#fff',borderRadius:10,padding:'13px 15px',marginBottom:14,border:'1px solid #E8E5DF'}}>
-              <div style={{display:'flex',justifyContent:'space-between',fontSize:10,marginBottom:8}}>
-                <span style={{color:'#888',fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase'}}>Distribución del ingreso</span>
-                <span style={{color:mc,fontWeight:700,fontSize:12}}>Margen {margen.toFixed(1)}%</span>
-              </div>
-              <div style={{height:12,background:'#f0f0ee',borderRadius:6,overflow:'hidden',display:'flex'}}>
-                <div style={{width:`${Math.min(agg.costo/agg.ventas*100,100)}%`,background:'#C8102E',transition:'width .4s'}}/>
-                <div style={{width:`${Math.min(gastosFijos/agg.ventas*100,100)}%`,background:'#f59e0b',transition:'width .4s'}}/>
-                <div style={{flex:1,background:margen>0?'#0D1F4A':'#dc2626'}}/>
-              </div>
-              <div style={{display:'flex',gap:12,marginTop:8,flexWrap:'wrap'}}>
-                {[['#C8102E','Costo mercancía'],['#f59e0b','Gastos fijos'],[margen>0?'#0D1F4A':'#dc2626','Ganancia']].map(([c,l])=>(
-                  <div key={l} style={{display:'flex',alignItems:'center',gap:5}}><div style={{width:8,height:8,borderRadius:2,background:c}}/><span style={{fontSize:10,color:'#888'}}>{l}</span></div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div style={{background:'#fff',borderRadius:10,border:'1px solid #E8E5DF',overflow:'hidden',marginBottom:14}}>
-            <div style={{padding:'10px 15px 8px',fontSize:10,fontWeight:700,color:'#bbb',letterSpacing:'.12em',textTransform:'uppercase',borderBottom:'1px solid #F4F2EE'}}>Gastos operativos del mes</div>
-            {[['bolsas','Bolsas y empaque'],['metaAds','Meta Ads / Instagram'],['suscripciones','Suscripciones (Canva, etc.)'],['viajesMiami','Viajes a Miami'],['otros','Otros gastos']].map(([f,l],i,arr)=>(
-              <div key={f} style={{display:'flex',alignItems:'center',padding:'11px 15px',borderBottom:i<arr.length-1?'1px solid #F8F6F2':'none',gap:8}}>
-                <span style={{flex:1,fontSize:13,color:'#444'}}>{l}</span>
-                <div style={{display:'flex',alignItems:'center',gap:5}}>
-                  <span style={{fontSize:12,color:'#ccc'}}>$</span>
-                  <input type="number" inputMode="decimal" value={gastos[f]} onChange={e=>changeGasto(f,e.target.value)} placeholder="0" style={{width:110,textAlign:'right',border:'1px solid #E2DED8',borderRadius:7,padding:'7px 9px',fontSize:14,fontWeight:600,color:'#1a1a2e',background:'#fafaf8',outline:'none'}}/>
-                  <span style={{fontSize:10,color:'#bbb',minWidth:28}}>COP</span>
-                </div>
-              </div>
-            ))}
-            {gastosFijos>0&&<div style={{padding:'10px 15px',background:'#FFFBEB',fontSize:12,color:'#92400E',fontWeight:600,borderTop:'1px solid #F4F2EE'}}>Total: <strong>${fmt(gastosFijos)} COP</strong></div>}
-          </div>
-
-          {agg.ventas>0&&(
-            <div style={{background:neta>=0?'#0D1F4A':'#7f1d1d',borderRadius:12,padding:'16px 18px',marginBottom:14}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.5)',fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',marginBottom:14}}>Resultado {MESES[month]} {year}</div>
-              {[['Ventas',`$${fmt(agg.ventas)} COP`,false],['− Costo productos',`$${fmt(agg.cp)} COP`,true],['− Envío absorbido',`$${fmt(agg.em)} COP`,true],['= Ganancia bruta',`$${fmt(agg.gan)} COP`,false],['− Gastos operativos',`$${fmt(gastosFijos)} COP`,true]].map(([l,v,neg])=>(
-                <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'3px 0'}}><span style={{fontSize:12,color:'rgba(255,255,255,.5)'}}>{l}</span><span style={{fontSize:12,fontWeight:500,color:neg?'rgba(255,255,255,.45)':'#fff'}}>{v}</span></div>
-              ))}
-              <div style={{height:1,background:'rgba(255,255,255,.15)',margin:'12px 0'}}/>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span style={{fontSize:14,fontWeight:700,color:'rgba(255,255,255,.8)'}}>Ganancia neta</span>
-                <span style={{fontSize:22,fontWeight:700,color:neta>=0?'#4ade80':'#f87171'}}>${fmt(neta)}</span>
-              </div>
-              <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
-                <span style={{fontSize:11,color:'rgba(255,255,255,.4)'}}>Margen real</span>
-                <span style={{fontSize:13,fontWeight:700,color:neta>=0?'#4ade80':'#f87171'}}>{margen.toFixed(1)}%</span>
-              </div>
-            </div>
-          )}
-
-          {chartData.some(d=>d.neta!==null)&&(
-            <div style={{background:'#fff',borderRadius:10,padding:'14px 12px',border:'1px solid #E8E5DF'}}>
-              <div style={{fontSize:10,fontWeight:700,color:'#aaa',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:14}}>Ganancia neta — últimos 6 meses</div>
-              <ResponsiveContainer width="100%" height={130}>
-                <BarChart data={chartData} barSize={34} margin={{top:4,right:4,left:4,bottom:0}}>
-                  <XAxis dataKey="label" tick={{fontSize:11,fill:'#bbb'}} axisLine={false} tickLine={false}/>
-                  <YAxis hide/>
-                  <Tooltip formatter={(v)=>v!==null?[`$${fmt(v)} COP`,'Ganancia neta']:['Sin datos','']} contentStyle={{fontSize:11,borderRadius:8,border:'1px solid #eee'}}/>
-                  <Bar dataKey="neta" radius={[5,5,0,0]}>
-                    {chartData.map((e,i)=><Cell key={i} fill={e.neta===null?'#F0EDE8':e.neta>=0?'#0D1F4A':'#C8102E'}/>)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </>}
-      </div>
-    </div>
-  )
+    const c = calcV(v);
+    return {
+      ...a,
+      ventas: a.ventas + c.venta,
+      cp: a.cp + c.cp,
+      et: a.et + c.et,
+      ec: a.ec + c.ec,
+      em: a.em + c.em,
+      costo: a.costo + c.costo,
+      gan: a.gan + c.gan
+    };
+  }, {
+    ventas: 0,
+    cp: 0,
+    et: 0,
+    ec: 0,
+    em: 0,
+    costo: 0,
+    gan: 0
+  });
+  const gastosFijos = Object.values(gastos).reduce((s, v) => s + n(v), 0);
+  const neta = agg.gan - gastosFijos;
+  const margen = agg.ventas > 0 ? neta / agg.ventas * 100 : 0;
+  const mc = margen >= 20 ? '#059669' : margen >= 10 ? '#d97706' : '#dc2626';
+  const chartData = Array.from({
+    length: 6
+  }, (_, i) => {
+    let m = month - (5 - i),
+      y = year;
+    while (m < 0) {
+      m += 12;
+      y--;
+    }
+    const cvk = `ad_v_${y}_${String(m + 1).padStart(2, '0')}`,
+      cgk = `ad_g_${y}_${String(m + 1).padStart(2, '0')}`;
+    const vs = allV[cvk] || [],
+      gs = allG[cgk] || {};
+    const tv = vs.reduce((s, v) => s + n(v.venta), 0);
+    const gb = vs.reduce((s, v) => {
+      const c = calcV(v);
+      return s + c.gan;
+    }, 0);
+    const go = Object.values(gs).reduce((s, v) => s + n(v), 0);
+    return {
+      label: MESES_C[m],
+      neta: tv > 0 ? gb - go : null
+    };
+  });
+  const lc = calcV(form);
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      borderBottom: '1px solid #E8E5DF',
+      padding: '11px 18px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: prevMes,
+    style: nbS
+  }, "\u2039"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      fontWeight: 700,
+      color: '#1a1a2e'
+    }
+  }, MESES[month], " ", year), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: '#bbb',
+      marginTop: 1
+    }
+  }, ventas.length, " ventas \xB7 $", fmt(agg.ventas), " COP ", saving && '· Guardando...')), /*#__PURE__*/React.createElement("button", {
+    onClick: nextMes,
+    style: nbS
+  }, "\u203A")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      borderBottom: '1px solid #E8E5DF',
+      display: 'flex'
+    }
+  }, [['ventas', '📋 Ventas'], ['envios', '📦 Envíos'], ['resumen', '📊 Resumen']].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    onClick: () => setTab(id),
+    style: {
+      flex: 1,
+      padding: '11px 4px',
+      border: 'none',
+      borderBottom: tab === id ? '3px solid #0D1F4A' : '3px solid transparent',
+      background: 'none',
+      cursor: 'pointer',
+      fontSize: 11,
+      fontWeight: 700,
+      color: tab === id ? '#0D1F4A' : '#aaa',
+      letterSpacing: '.04em',
+      transition: 'all .15s'
+    }
+  }, label))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '14px 14px 20px',
+      maxWidth: 680,
+      margin: '0 auto'
+    }
+  }, tab === 'ventas' && /*#__PURE__*/React.createElement(React.Fragment, null, ventas.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr 1fr',
+      gap: 8,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(MC, {
+    label: "Ventas",
+    val: `$${fmt(agg.ventas)}`,
+    c: "#0D1F4A"
+  }), /*#__PURE__*/React.createElement(MC, {
+    label: "Costo real",
+    val: `$${fmt(agg.costo)}`,
+    c: "#C8102E"
+  }), /*#__PURE__*/React.createElement(MC, {
+    label: "Ganancia",
+    val: `$${fmt(agg.gan)}`,
+    c: "#059669"
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setForm(EMPTY_V);
+      setEditId(null);
+      setShowForm(true);
+    },
+    style: {
+      width: '100%',
+      padding: 13,
+      background: '#0D1F4A',
+      color: '#fff',
+      border: 'none',
+      borderRadius: 10,
+      fontSize: 13,
+      fontWeight: 700,
+      cursor: 'pointer',
+      marginBottom: 14
+    }
+  }, "+ Agregar venta"), showForm && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      borderRadius: 12,
+      border: '2px solid #0D1F4A',
+      padding: 16,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      fontWeight: 700,
+      color: '#0D1F4A',
+      letterSpacing: '.1em',
+      textTransform: 'uppercase',
+      marginBottom: 14
+    }
+  }, editId ? 'Editar venta' : 'Nueva venta'), /*#__PURE__*/React.createElement(FF, {
+    label: "Cliente *",
+    val: form.cliente,
+    set: v => setForm(f => ({
+      ...f,
+      cliente: v
+    })),
+    ph: "ej: ISAURA"
+  }), /*#__PURE__*/React.createElement(FF, {
+    label: "Producto (opcional)",
+    val: form.producto,
+    set: v => setForm(f => ({
+      ...f,
+      producto: v
+    })),
+    ph: "ej: Nike Air Max"
+  }), /*#__PURE__*/React.createElement(Div, {
+    label: "Precios"
+  }), /*#__PURE__*/React.createElement(FF, {
+    label: "Precio de venta al cliente (COP) *",
+    val: form.venta,
+    set: v => setForm(f => ({
+      ...f,
+      venta: v
+    })),
+    ph: "ej: 670000",
+    type: "number"
+  }), /*#__PURE__*/React.createElement(FF, {
+    label: "Costo del producto (COP)",
+    val: form.costoProducto,
+    set: v => setForm(f => ({
+      ...f,
+      costoProducto: v
+    })),
+    ph: "ej: 450000",
+    type: "number"
+  }), /*#__PURE__*/React.createElement(Div, {
+    label: "Env\xEDo \u2014 \xBFqui\xE9n paga qu\xE9?"
+  }), /*#__PURE__*/React.createElement(FF, {
+    label: "Env\xEDo total casillero (COP)",
+    val: form.envioTotal,
+    set: v => setForm(f => ({
+      ...f,
+      envioTotal: v
+    })),
+    ph: "ej: 80000",
+    type: "number",
+    hint: "Costo real que cobr\xF3 el casillero"
+  }), /*#__PURE__*/React.createElement(FF, {
+    label: "Env\xEDo cobrado al cliente (COP)",
+    val: form.envioCliente,
+    set: v => setForm(f => ({
+      ...f,
+      envioCliente: v
+    })),
+    ph: "ej: 30000",
+    type: "number",
+    hint: "Parte incluida en el precio de venta"
+  }), (n(form.venta) > 0 || n(form.envioTotal) > 0) && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#F0F5FF',
+      borderRadius: 10,
+      padding: '12px 14px',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      color: '#0D1F4A',
+      letterSpacing: '.1em',
+      textTransform: 'uppercase',
+      marginBottom: 8
+    }
+  }, "Vista previa"), [['Precio de venta', `$${fmt(lc.venta)}`], ['Costo producto', `−$${fmt(lc.cp)}`, true], lc.em > 0 && [`Envío mío (${fmt(lc.et)}−${fmt(lc.ec)})`, `−$${fmt(lc.em)}`, true]].filter(Boolean).map(([l, v, r]) => /*#__PURE__*/React.createElement("div", {
+    key: l,
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      padding: '2px 0'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      color: '#555'
+    }
+  }, l), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      fontWeight: 500,
+      color: r ? '#C8102E' : '#1a1a2e'
+    }
+  }, v))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: '#C8D8F0',
+      margin: '8px 0'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700,
+      color: '#0D1F4A'
+    }
+  }, "Ganancia"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: lc.gan >= 0 ? '#059669' : '#dc2626'
+    }
+  }, "$", fmt(lc.gan), " (", lc.margen.toFixed(1), "%)"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: saveVenta,
+    style: {
+      flex: 2,
+      padding: 11,
+      background: '#0D1F4A',
+      color: '#fff',
+      border: 'none',
+      borderRadius: 8,
+      fontSize: 13,
+      fontWeight: 700,
+      cursor: 'pointer'
+    }
+  }, editId ? 'Guardar cambios' : 'Agregar'), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setShowForm(false);
+      setForm(EMPTY_V);
+      setEditId(null);
+    },
+    style: {
+      flex: 1,
+      padding: 11,
+      background: '#f4f5f7',
+      color: '#666',
+      border: 'none',
+      borderRadius: 8,
+      fontSize: 13,
+      cursor: 'pointer'
+    }
+  }, "Cancelar"))), ventas.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center',
+      padding: '40px 20px',
+      color: '#bbb'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 32,
+      marginBottom: 8
+    }
+  }, "\uD83D\uDCCB"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13
+    }
+  }, "Sin ventas este mes")) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      borderRadius: 12,
+      border: '1px solid #E8E5DF',
+      overflow: 'hidden'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 70px 70px 70px 36px',
+      padding: '8px 12px',
+      background: '#0D1F4A'
+    }
+  }, ['Cliente', 'Venta', 'Costo', 'Gan.', ''].map((h, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      color: 'rgba(255,255,255,.55)',
+      letterSpacing: '.1em',
+      textTransform: 'uppercase',
+      textAlign: i > 0 ? 'right' : 'left'
+    }
+  }, h))), ventas.map((v, i) => {
+    const c = calcV(v);
+    return /*#__PURE__*/React.createElement("div", {
+      key: v.id,
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 70px 70px 70px 36px',
+        padding: '11px 12px',
+        borderBottom: i < ventas.length - 1 ? '1px solid #F4F2EE' : 'none',
+        alignItems: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        fontWeight: 600,
+        color: '#1a1a2e'
+      }
+    }, v.cliente), v.producto && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: '#aaa',
+        marginTop: 1
+      }
+    }, v.producto), c.em > 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 9,
+        color: '#d97706',
+        marginTop: 2
+      }
+    }, "\uD83D\uDCE6 Env\xEDo m\xEDo: $", fmt(c.em))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: 'right',
+        fontSize: 12,
+        fontWeight: 500
+      }
+    }, "$", fmt(c.venta)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: 'right',
+        fontSize: 12,
+        color: '#C8102E'
+      }
+    }, "$", fmt(c.costo)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: 'right',
+        fontSize: 12,
+        fontWeight: 700,
+        color: c.gan >= 0 ? '#059669' : '#dc2626'
+      }
+    }, "$", fmt(c.gan)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 3,
+        alignItems: 'flex-end'
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        setForm({
+          cliente: v.cliente,
+          producto: v.producto || '',
+          venta: v.venta,
+          costoProducto: v.costoProducto || '',
+          envioTotal: v.envioTotal || '',
+          envioCliente: v.envioCliente || ''
+        });
+        setEditId(v.id);
+        setShowForm(true);
+      },
+      style: {
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: 13,
+        padding: '0 2px'
+      }
+    }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        const nd = ventas.filter(x => x.id !== v.id);
+        setVentas(nd);
+        saveVentas(nd);
+      },
+      style: {
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: 13,
+        padding: '0 2px'
+      }
+    }, "\uD83D\uDDD1\uFE0F")));
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 70px 70px 70px 36px',
+      padding: '11px 12px',
+      background: '#F5F3EE',
+      borderTop: '2px solid #E8E5DF'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      fontWeight: 700,
+      color: '#666',
+      letterSpacing: '.08em',
+      textTransform: 'uppercase'
+    }
+  }, "TOTAL"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'right',
+      fontSize: 12,
+      fontWeight: 700
+    }
+  }, "$", fmt(agg.ventas)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'right',
+      fontSize: 12,
+      fontWeight: 700,
+      color: '#C8102E'
+    }
+  }, "$", fmt(agg.costo)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'right',
+      fontSize: 12,
+      fontWeight: 700,
+      color: '#059669'
+    }
+  }, "$", fmt(agg.gan)), /*#__PURE__*/React.createElement("div", null)))), tab === 'envios' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      borderRadius: 12,
+      border: '1px solid #E8E5DF',
+      overflow: 'hidden',
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '12px 15px',
+      background: '#0D1F4A'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      fontWeight: 700,
+      color: 'rgba(255,255,255,.7)',
+      letterSpacing: '.1em',
+      textTransform: 'uppercase'
+    }
+  }, "Resumen de env\xEDos \u2014 ", MESES[month])), /*#__PURE__*/React.createElement(ER, {
+    label: "Env\xEDo total pagado al casillero",
+    val: agg.et,
+    color: "#1a1a2e",
+    big: true
+  }), /*#__PURE__*/React.createElement(ER, {
+    label: "Env\xEDo cobrado a clientes",
+    val: agg.ec,
+    color: "#059669",
+    sub: "Recuperado \u2014 incluido en el precio de venta"
+  }), /*#__PURE__*/React.createElement(ER, {
+    label: "Env\xEDo a mi cargo (absorb\xED yo)",
+    val: agg.em,
+    color: "#C8102E",
+    sub: "Sale de mi bolsillo \u2014 reduce mi ganancia"
+  }), agg.et > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '12px 15px',
+      borderTop: '1px solid #F4F2EE'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: '#aaa',
+      fontWeight: 600,
+      marginBottom: 8,
+      letterSpacing: '.06em',
+      textTransform: 'uppercase'
+    }
+  }, "\xBFC\xF3mo se dividi\xF3?"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 10,
+      background: '#f0f0ee',
+      borderRadius: 5,
+      overflow: 'hidden',
+      display: 'flex'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: `${agg.ec / agg.et * 100}%`,
+      background: '#059669',
+      transition: 'width .4s'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      background: '#C8102E'
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      marginTop: 8,
+      fontSize: 11
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#059669',
+      fontWeight: 600
+    }
+  }, "Cliente pag\xF3 ", (agg.ec / agg.et * 100).toFixed(0), "%"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#C8102E',
+      fontWeight: 600
+    }
+  }, "Yo absorb\xED ", (agg.em / agg.et * 100).toFixed(0), "%")))), ventas.filter(v => n(v.envioTotal) > 0).map((v, i, arr) => {
+    const c = calcV(v);
+    return /*#__PURE__*/React.createElement("div", {
+      key: v.id,
+      style: {
+        background: '#fff',
+        borderRadius: 10,
+        border: '1px solid #E8E5DF',
+        padding: '12px 14px',
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 6
+      }
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        fontWeight: 600,
+        color: '#1a1a2e'
+      }
+    }, v.cliente), v.producto && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: '#aaa'
+      }
+    }, v.producto)), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 13,
+        fontWeight: 700
+      }
+    }, "Total: $", fmt(c.et))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        gap: 16,
+        marginBottom: 6
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 12,
+        color: '#059669',
+        fontWeight: 600
+      }
+    }, "\u2191 Cliente: $", fmt(c.ec)), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 12,
+        color: '#C8102E',
+        fontWeight: 600
+      }
+    }, "\u2193 Yo: $", fmt(c.em))), c.et > 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: 6,
+        background: '#f0f0ee',
+        borderRadius: 3,
+        overflow: 'hidden',
+        display: 'flex'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: `${c.ec / c.et * 100}%`,
+        background: '#059669'
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        background: '#C8102E'
+      }
+    })));
+  }), ventas.filter(v => n(v.envioTotal) > 0).length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center',
+      padding: '40px 20px',
+      color: '#bbb'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 32,
+      marginBottom: 8
+    }
+  }, "\uD83D\uDCE6"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13
+    }
+  }, "Agrega ventas con env\xEDo para ver el desglose"))), tab === 'resumen' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 10,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(Card, {
+    label: "Ventas totales",
+    val: `$${fmt(agg.ventas)}`,
+    sub: `${ventas.length} productos`,
+    accent: "#0D1F4A"
+  }), /*#__PURE__*/React.createElement(Card, {
+    label: "Ganancia neta",
+    val: `$${fmt(neta)}`,
+    sub: `Margen ${margen.toFixed(1)}%`,
+    accent: mc,
+    border: `2px solid ${mc}`
+  }), /*#__PURE__*/React.createElement(Card, {
+    label: "Ganancia bruta",
+    val: `$${fmt(agg.gan)}`,
+    sub: "Antes de gastos fijos",
+    accent: "#555"
+  }), /*#__PURE__*/React.createElement(Card, {
+    label: "Env\xEDo absorbido",
+    val: `$${fmt(agg.em)}`,
+    sub: "Sale de mi ganancia",
+    accent: "#d97706"
+  })), agg.ventas > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      borderRadius: 10,
+      padding: '13px 15px',
+      marginBottom: 14,
+      border: '1px solid #E8E5DF'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      fontSize: 10,
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#888',
+      fontWeight: 700,
+      letterSpacing: '.08em',
+      textTransform: 'uppercase'
+    }
+  }, "Distribuci\xF3n del ingreso"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: mc,
+      fontWeight: 700,
+      fontSize: 12
+    }
+  }, "Margen ", margen.toFixed(1), "%")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 12,
+      background: '#f0f0ee',
+      borderRadius: 6,
+      overflow: 'hidden',
+      display: 'flex'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: `${Math.min(agg.costo / agg.ventas * 100, 100)}%`,
+      background: '#C8102E',
+      transition: 'width .4s'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: `${Math.min(gastosFijos / agg.ventas * 100, 100)}%`,
+      background: '#f59e0b',
+      transition: 'width .4s'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      background: margen > 0 ? '#0D1F4A' : '#dc2626'
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 12,
+      marginTop: 8,
+      flexWrap: 'wrap'
+    }
+  }, [['#C8102E', 'Costo mercancía'], ['#f59e0b', 'Gastos fijos'], [margen > 0 ? '#0D1F4A' : '#dc2626', 'Ganancia']].map(([c, l]) => /*#__PURE__*/React.createElement("div", {
+    key: l,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 8,
+      height: 8,
+      borderRadius: 2,
+      background: c
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 10,
+      color: '#888'
+    }
+  }, l))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      borderRadius: 10,
+      border: '1px solid #E8E5DF',
+      overflow: 'hidden',
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '10px 15px 8px',
+      fontSize: 10,
+      fontWeight: 700,
+      color: '#bbb',
+      letterSpacing: '.12em',
+      textTransform: 'uppercase',
+      borderBottom: '1px solid #F4F2EE'
+    }
+  }, "Gastos operativos del mes"), [['bolsas', 'Bolsas y empaque'], ['metaAds', 'Meta Ads / Instagram'], ['suscripciones', 'Suscripciones (Canva, etc.)'], ['viajesMiami', 'Viajes a Miami'], ['otros', 'Otros gastos']].map(([f, l], i, arr) => /*#__PURE__*/React.createElement("div", {
+    key: f,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      padding: '11px 15px',
+      borderBottom: i < arr.length - 1 ? '1px solid #F8F6F2' : 'none',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1,
+      fontSize: 13,
+      color: '#444'
+    }
+  }, l), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: '#ccc'
+    }
+  }, "$"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    inputMode: "decimal",
+    value: gastos[f],
+    onChange: e => changeGasto(f, e.target.value),
+    placeholder: "0",
+    style: {
+      width: 110,
+      textAlign: 'right',
+      border: '1px solid #E2DED8',
+      borderRadius: 7,
+      padding: '7px 9px',
+      fontSize: 14,
+      fontWeight: 600,
+      color: '#1a1a2e',
+      background: '#fafaf8',
+      outline: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 10,
+      color: '#bbb',
+      minWidth: 28
+    }
+  }, "COP")))), gastosFijos > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '10px 15px',
+      background: '#FFFBEB',
+      fontSize: 12,
+      color: '#92400E',
+      fontWeight: 600,
+      borderTop: '1px solid #F4F2EE'
+    }
+  }, "Total: ", /*#__PURE__*/React.createElement("strong", null, "$", fmt(gastosFijos), " COP"))), agg.ventas > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: neta >= 0 ? '#0D1F4A' : '#7f1d1d',
+      borderRadius: 12,
+      padding: '16px 18px',
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      color: 'rgba(255,255,255,.5)',
+      fontWeight: 700,
+      letterSpacing: '.14em',
+      textTransform: 'uppercase',
+      marginBottom: 14
+    }
+  }, "Resultado ", MESES[month], " ", year), [['Ventas', `$${fmt(agg.ventas)} COP`, false], ['− Costo productos', `$${fmt(agg.cp)} COP`, true], ['− Envío absorbido', `$${fmt(agg.em)} COP`, true], ['= Ganancia bruta', `$${fmt(agg.gan)} COP`, false], ['− Gastos operativos', `$${fmt(gastosFijos)} COP`, true]].map(([l, v, neg]) => /*#__PURE__*/React.createElement("div", {
+    key: l,
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      padding: '3px 0'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: 'rgba(255,255,255,.5)'
+    }
+  }, l), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      fontWeight: 500,
+      color: neg ? 'rgba(255,255,255,.45)' : '#fff'
+    }
+  }, v))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: 'rgba(255,255,255,.15)',
+      margin: '12px 0'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: 'rgba(255,255,255,.8)'
+    }
+  }, "Ganancia neta"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 22,
+      fontWeight: 700,
+      color: neta >= 0 ? '#4ade80' : '#f87171'
+    }
+  }, "$", fmt(neta))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      marginTop: 4
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      color: 'rgba(255,255,255,.4)'
+    }
+  }, "Margen real"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: neta >= 0 ? '#4ade80' : '#f87171'
+    }
+  }, margen.toFixed(1), "%"))), chartData.some(d => d.neta !== null) && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      borderRadius: 10,
+      padding: '14px 12px',
+      border: '1px solid #E8E5DF'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      fontWeight: 700,
+      color: '#aaa',
+      letterSpacing: '.12em',
+      textTransform: 'uppercase',
+      marginBottom: 14
+    }
+  }, "Ganancia neta \u2014 \xFAltimos 6 meses"), /*#__PURE__*/React.createElement(ResponsiveContainer, {
+    width: "100%",
+    height: 130
+  }, /*#__PURE__*/React.createElement(BarChart, {
+    data: chartData,
+    barSize: 34,
+    margin: {
+      top: 4,
+      right: 4,
+      left: 4,
+      bottom: 0
+    }
+  }, /*#__PURE__*/React.createElement(XAxis, {
+    dataKey: "label",
+    tick: {
+      fontSize: 11,
+      fill: '#bbb'
+    },
+    axisLine: false,
+    tickLine: false
+  }), /*#__PURE__*/React.createElement(YAxis, {
+    hide: true
+  }), /*#__PURE__*/React.createElement(Tooltip, {
+    formatter: v => v !== null ? [`$${fmt(v)} COP`, 'Ganancia neta'] : ['Sin datos', ''],
+    contentStyle: {
+      fontSize: 11,
+      borderRadius: 8,
+      border: '1px solid #eee'
+    }
+  }), /*#__PURE__*/React.createElement(Bar, {
+    dataKey: "neta",
+    radius: [5, 5, 0, 0]
+  }, chartData.map((e, i) => /*#__PURE__*/React.createElement(Cell, {
+    key: i,
+    fill: e.neta === null ? '#F0EDE8' : e.neta >= 0 ? '#0D1F4A' : '#C8102E'
+  })))))))));
 }
-
-const nbS = {background:'none',border:'1px solid #E8E5DF',borderRadius:7,padding:'6px 14px',cursor:'pointer',fontSize:18,color:'#555',lineHeight:1}
-const MC = ({label,val,c})=>(<div style={{background:'#fff',borderRadius:8,padding:'10px 12px',border:'1px solid #E8E5DF',textAlign:'center'}}><div style={{fontSize:9,color:'#bbb',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',marginBottom:3}}>{label}</div><div style={{fontSize:14,fontWeight:700,color:c}}>{val}</div></div>)
-const Card = ({label,val,sub,accent,border})=>(<div style={{background:'#fff',borderRadius:10,padding:'12px 14px',border:border||'1px solid #E8E5DF'}}><div style={{fontSize:9,color:'#bbb',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',marginBottom:4}}>{label}</div><div style={{fontSize:19,fontWeight:700,color:accent,lineHeight:1.1,marginBottom:2}}>{val}</div><div style={{fontSize:10,color:'#bbb'}}>{sub}</div></div>)
-const FF = ({label,val,set,ph,type='text',hint})=>(<div style={{marginBottom:10}}><label style={{display:'block',fontSize:11,color:'#888',fontWeight:600,marginBottom:4}}>{label}</label><input type={type} inputMode={type==='number'?'decimal':'text'} value={val} onChange={e=>set(e.target.value)} placeholder={ph} style={{width:'100%',padding:'10px 12px',border:'1px solid #E2DED8',borderRadius:8,fontSize:14,color:'#1a1a2e',background:'#fafaf8',outline:'none'}}/>{hint&&<div style={{fontSize:10,color:'#bbb',marginTop:3}}>{hint}</div>}</div>)
-const Div = ({label})=>(<div style={{display:'flex',alignItems:'center',gap:8,margin:'14px 0 10px'}}><div style={{flex:1,height:1,background:'#E8E5DF'}}/><span style={{fontSize:9,fontWeight:700,color:'#bbb',letterSpacing:'.12em',textTransform:'uppercase'}}>{label}</span><div style={{flex:1,height:1,background:'#E8E5DF'}}/></div>)
-const ER = ({label,val,color,sub,big})=>(<div style={{padding:'13px 15px',borderBottom:'1px solid #F4F2EE'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}><span style={{fontSize:13,color:'#444',flex:1}}>{label}</span><span style={{fontSize:big?20:15,fontWeight:700,color,marginLeft:12}}>${fmt(val)}</span></div>{sub&&<div style={{fontSize:10,color:'#aaa',marginTop:3}}>{sub}</div>}</div>)
-
-
-
-const f = n => Math.round(n).toLocaleString('es-CO')
-const n = v => parseFloat(v) || 0
-
-const COLORS = ['#1B3A8B', '#C8102E', '#1B3A8B', '#C8102E']
-
+const nbS = {
+  background: 'none',
+  border: '1px solid #E8E5DF',
+  borderRadius: 7,
+  padding: '6px 14px',
+  cursor: 'pointer',
+  fontSize: 18,
+  color: '#555',
+  lineHeight: 1
+};
+const MC = ({
+  label,
+  val,
+  c
+}) => /*#__PURE__*/React.createElement("div", {
+  style: {
+    background: '#fff',
+    borderRadius: 8,
+    padding: '10px 12px',
+    border: '1px solid #E8E5DF',
+    textAlign: 'center'
+  }
+}, /*#__PURE__*/React.createElement("div", {
+  style: {
+    fontSize: 9,
+    color: '#bbb',
+    fontWeight: 700,
+    letterSpacing: '.1em',
+    textTransform: 'uppercase',
+    marginBottom: 3
+  }
+}, label), /*#__PURE__*/React.createElement("div", {
+  style: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: c
+  }
+}, val));
+const Card = ({
+  label,
+  val,
+  sub,
+  accent,
+  border
+}) => /*#__PURE__*/React.createElement("div", {
+  style: {
+    background: '#fff',
+    borderRadius: 10,
+    padding: '12px 14px',
+    border: border || '1px solid #E8E5DF'
+  }
+}, /*#__PURE__*/React.createElement("div", {
+  style: {
+    fontSize: 9,
+    color: '#bbb',
+    fontWeight: 700,
+    letterSpacing: '.12em',
+    textTransform: 'uppercase',
+    marginBottom: 4
+  }
+}, label), /*#__PURE__*/React.createElement("div", {
+  style: {
+    fontSize: 19,
+    fontWeight: 700,
+    color: accent,
+    lineHeight: 1.1,
+    marginBottom: 2
+  }
+}, val), /*#__PURE__*/React.createElement("div", {
+  style: {
+    fontSize: 10,
+    color: '#bbb'
+  }
+}, sub));
+const FF = ({
+  label,
+  val,
+  set,
+  ph,
+  type = 'text',
+  hint
+}) => /*#__PURE__*/React.createElement("div", {
+  style: {
+    marginBottom: 10
+  }
+}, /*#__PURE__*/React.createElement("label", {
+  style: {
+    display: 'block',
+    fontSize: 11,
+    color: '#888',
+    fontWeight: 600,
+    marginBottom: 4
+  }
+}, label), /*#__PURE__*/React.createElement("input", {
+  type: type,
+  inputMode: type === 'number' ? 'decimal' : 'text',
+  value: val,
+  onChange: e => set(e.target.value),
+  placeholder: ph,
+  style: {
+    width: '100%',
+    padding: '10px 12px',
+    border: '1px solid #E2DED8',
+    borderRadius: 8,
+    fontSize: 14,
+    color: '#1a1a2e',
+    background: '#fafaf8',
+    outline: 'none'
+  }
+}), hint && /*#__PURE__*/React.createElement("div", {
+  style: {
+    fontSize: 10,
+    color: '#bbb',
+    marginTop: 3
+  }
+}, hint));
+const Div = ({
+  label
+}) => /*#__PURE__*/React.createElement("div", {
+  style: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    margin: '14px 0 10px'
+  }
+}, /*#__PURE__*/React.createElement("div", {
+  style: {
+    flex: 1,
+    height: 1,
+    background: '#E8E5DF'
+  }
+}), /*#__PURE__*/React.createElement("span", {
+  style: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: '#bbb',
+    letterSpacing: '.12em',
+    textTransform: 'uppercase'
+  }
+}, label), /*#__PURE__*/React.createElement("div", {
+  style: {
+    flex: 1,
+    height: 1,
+    background: '#E8E5DF'
+  }
+}));
+const ER = ({
+  label,
+  val,
+  color,
+  sub,
+  big
+}) => /*#__PURE__*/React.createElement("div", {
+  style: {
+    padding: '13px 15px',
+    borderBottom: '1px solid #F4F2EE'
+  }
+}, /*#__PURE__*/React.createElement("div", {
+  style: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start'
+  }
+}, /*#__PURE__*/React.createElement("span", {
+  style: {
+    fontSize: 13,
+    color: '#444',
+    flex: 1
+  }
+}, label), /*#__PURE__*/React.createElement("span", {
+  style: {
+    fontSize: big ? 20 : 15,
+    fontWeight: 700,
+    color,
+    marginLeft: 12
+  }
+}, "$", fmt(val))), sub && /*#__PURE__*/React.createElement("div", {
+  style: {
+    fontSize: 10,
+    color: '#aaa',
+    marginTop: 3
+  }
+}, sub));</script>
+<script>const fmt_C = n => Math.round(n).toLocaleString('es-CO');
+const num_C = v => parseFloat(v) || 0;
+const COLORS = ['#1B3A8B', '#C8102E', '#1B3A8B', '#C8102E'];
 function Calculadora() {
-  const [trm, setTrm] = useState('4280')
-  const [redespacho, setRedespacho] = useState('3')
-  const [boxVal, setBoxVal] = useState('35')
-  const [products, setProducts] = useState([
-    { price: '95', shipping: '15.91', margin: '130000' },
-    { price: '120', shipping: '19.09', margin: '180000' },
-  ])
-  const [copied, setCopied] = useState(null)
-
+  const [trm, setTrm] = useState('4280');
+  const [redespacho, setRedespacho] = useState('3');
+  const [boxVal, setBoxVal] = useState('35');
+  const [products, setProducts] = useState([{
+    price: '95',
+    shipping: '15.91',
+    margin: '130000'
+  }, {
+    price: '120',
+    shipping: '19.09',
+    margin: '180000'
+  }]);
+  const [copied, setCopied] = useState(null);
   function autoDistribute() {
-    const box = n(boxVal)
-    const total = products.reduce((s, p) => s + n(p.price), 0)
+    const box = n(boxVal);
+    const total = products.reduce((s, p) => s + n(p.price), 0);
     setProducts(products.map(p => ({
       ...p,
       shipping: total > 0 ? (n(p.price) / total * box).toFixed(2) : (box / products.length).toFixed(2)
-    })))
+    })));
   }
-
   function updateProduct(i, field, val) {
-    setProducts(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: val } : p))
+    setProducts(prev => prev.map((p, idx) => idx === i ? {
+      ...p,
+      [field]: val
+    } : p));
   }
-
   function addProduct() {
-    setProducts(prev => [...prev, { price: '', shipping: '', margin: '150000' }])
+    setProducts(prev => [...prev, {
+      price: '',
+      shipping: '',
+      margin: '150000'
+    }]);
   }
-
   function removeProduct(i) {
-    setProducts(prev => prev.filter((_, idx) => idx !== i))
+    setProducts(prev => prev.filter((_, idx) => idx !== i));
   }
-
   function calcProduct(p) {
-    const trmV = n(trm) || 4280
-    const red = n(redespacho) / products.length
-    const price = n(p.price)
-    const ship = n(p.shipping)
-    const margin = n(p.margin)
-    const applyCustoms = price > 200
-    let customs = 0
+    const trmV = n(trm) || 4280;
+    const red = n(redespacho) / products.length;
+    const price = n(p.price);
+    const ship = n(p.shipping);
+    const margin = n(p.margin);
+    const applyCustoms = price > 200;
+    let customs = 0;
     if (applyCustoms) {
-      const cif = price + ship
-      const arancel = cif * 0.10
-      customs = arancel + (cif + arancel) * 0.19
+      const cif = price + ship;
+      const arancel = cif * 0.10;
+      customs = arancel + (cif + arancel) * 0.19;
     }
-    const costUSD = price + ship + red + customs
-    const costCOP = costUSD * trmV
-    const sell = costCOP + margin
-    const mp = sell > 0 ? (margin / sell * 100) : 0
-    return { costUSD, costCOP, sell, mp, customs, applyCustoms, red }
+    const costUSD = price + ship + red + customs;
+    const costCOP = costUSD * trmV;
+    const sell = costCOP + margin;
+    const mp = sell > 0 ? margin / sell * 100 : 0;
+    return {
+      costUSD,
+      costCOP,
+      sell,
+      mp,
+      customs,
+      applyCustoms,
+      red
+    };
   }
-
   const totals = products.reduce((acc, p) => {
-    const c = calcProduct(p)
-    return { inv: acc.inv + c.costUSD, gain: acc.gain + n(p.margin), rec: acc.rec + c.sell }
-  }, { inv: 0, gain: 0, rec: 0 })
-
+    const c = calcProduct(p);
+    return {
+      inv: acc.inv + c.costUSD,
+      gain: acc.gain + n(p.margin),
+      rec: acc.rec + c.sell
+    };
+  }, {
+    inv: 0,
+    gain: 0,
+    rec: 0
+  });
   function copyPrice(i, sell) {
-    navigator.clipboard.writeText(`$${f(sell)} COP`).catch(() => {})
-    setCopied(i)
-    setTimeout(() => setCopied(null), 1500)
+    navigator.clipboard.writeText(`$${f(sell)} COP`).catch(() => {});
+    setCopied(i);
+    setTimeout(() => setCopied(null), 1500);
   }
-
-  return (
-    <div style={{ padding: '14px 14px 20px', maxWidth: 680, margin: '0 auto' }}>
-
-      {/* TRM + REDESPACHO */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <Field label="TRM del día (COP/USD)">
-          <input type="number" value={trm} onChange={e => setTrm(e.target.value)} style={inputStyle} />
-        </Field>
-        <Field label="Redespacho Riohacha (USD total)">
-          <input type="number" value={redespacho} onChange={e => setRedespacho(e.target.value)} style={inputStyle} />
-        </Field>
-      </div>
-
-      {/* BOX HELPER */}
-      <div style={{ background: '#fff', border: '1px solid #E2DED8', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12, color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>Caja casillero:</span>
-          <select value={boxVal} onChange={e => setBoxVal(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 150 }}>
-            <option value="17">Hasta 3 lbs — $17</option>
-            <option value="27">Hasta 5 lbs — $27</option>
-            <option value="35">Hasta 10 lbs — $35</option>
-          </select>
-          <button onClick={autoDistribute} style={{ padding: '8px 14px', background: '#1B3A8B', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            ↻ Distribuir envío
-          </button>
-        </div>
-        <p style={{ fontSize: 10, color: '#bbb', marginTop: 8 }}>
-          Distribuye el costo proporcionalmente. Puedes editar cada producto después.
-        </p>
-      </div>
-
-      {/* PRODUCT CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: products.length > 1 ? '1fr 1fr' : '1fr', gap: 12, marginBottom: 12 }}>
-        {products.map((p, i) => {
-          const c = calcProduct(p)
-          const badgeColor = c.mp >= 20 ? '#059669' : c.mp >= 12 ? '#d97706' : '#dc2626'
-          const badgeBg = c.mp >= 20 ? '#D1FAE5' : c.mp >= 12 ? '#FFF3CD' : '#FEE2E2'
-          return (
-            <div key={i} style={{ background: '#fff', border: '1px solid #E2DED8', borderRadius: 12, overflow: 'hidden' }}>
-              {/* Header */}
-              <div style={{ background: COLORS[i % 2], padding: '12px 13px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.85)', letterSpacing: '.05em' }}>Producto {i + 1}</span>
-                  {products.length > 1 && (
-                    <button onClick={() => removeProduct(i)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.45)', cursor: 'pointer', fontSize: 15, padding: '0 2px' }}>✕</button>
-                  )}
-                </div>
-                {[
-                  { label: 'Precio', field: 'price', suffix: 'USD' },
-                  { label: 'Envío casillero', field: 'shipping', suffix: 'USD' },
-                  { label: 'Ganancia', field: 'margin', suffix: 'COP' },
-                ].map(({ label, field, suffix }) => (
-                  <div key={field} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.15)', borderRadius: 7, padding: '6px 9px', marginBottom: 6 }}>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,.55)', minWidth: 70, fontWeight: 500 }}>{label}</span>
-                    <input
-                      type="number"
-                      value={p[field]}
-                      onChange={e => updateProduct(i, field, e.target.value)}
-                      placeholder="0"
-                      style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, flex: 1, outline: 'none', minWidth: 0, textAlign: 'right' }}
-                    />
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginLeft: 5 }}>{suffix}</span>
-                  </div>
-                ))}
-              </div>
-              {/* Body */}
-              <div style={{ padding: '11px 13px' }}>
-                {[
-                  ['Precio USD', `$${n(p.price).toFixed(2)} USD`],
-                  ['Envío casillero', `−$${n(p.shipping).toFixed(2)} USD`],
-                  ['Redespacho', `−$${c.red.toFixed(2)} USD`],
-                  ...(c.applyCustoms ? [['Aduana (10%+IVA)', `−$${c.customs.toFixed(2)} USD`]] : []),
-                ].map(([l, v]) => (
-                  <div key={l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '3px 0', borderBottom: '1px solid #F4F2EE', color: v.includes('−') ? '#C8102E' : '#666' }}>
-                    <span style={{ color: '#888' }}>{l}</span><span style={{ fontWeight: 500 }}>{v}</span>
-                  </div>
-                ))}
-                {c.applyCustoms && (
-                  <div style={{ fontSize: 10, padding: '4px 7px', borderRadius: 5, background: '#FFF3CD', color: '#856404', margin: '4px 0' }}>Aplica aduana — supera $200 USD</div>
-                )}
-                {!c.applyCustoms && (
-                  <div style={{ fontSize: 10, padding: '4px 7px', borderRadius: 5, background: '#D1FAE5', color: '#065F46', margin: '4px 0' }}>Sin aduana — bajo $200 USD</div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0 2px', borderTop: '1px solid #eee', marginTop: 4 }}>
-                  <span style={{ fontSize: 12, color: '#888' }}>Costo en COP</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#1B3A8B' }}>${f(c.costCOP)}</span>
-                </div>
-                <div style={{ fontSize: 26, fontWeight: 700, color: '#1a1a2e', textAlign: 'center', margin: '8px 0 2px' }}>
-                  ${f(c.sell)}
-                </div>
-                <div style={{ fontSize: 10, color: '#aaa', textAlign: 'center', marginBottom: 6 }}>precio de venta sugerido</div>
-                <div style={{ padding: '5px 10px', borderRadius: 20, fontSize: 10, fontWeight: 600, textAlign: 'center', background: badgeBg, color: badgeColor, marginBottom: 8 }}>
-                  Margen {c.mp.toFixed(1)}% · Ganancia ${f(n(p.margin))} COP
-                </div>
-                <button onClick={() => copyPrice(i, c.sell)} style={{ width: '100%', padding: 8, background: 'transparent', border: '1px solid #E2DED8', borderRadius: 8, fontSize: 12, color: '#666', cursor: 'pointer' }}>
-                  {copied === i ? '¡Copiado!' : 'Copiar precio'}
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      <button onClick={addProduct} style={{ width: '100%', padding: 10, background: 'transparent', border: '1.5px dashed #d0d4dc', borderRadius: 10, fontSize: 13, color: '#888', cursor: 'pointer', marginBottom: 14 }}>
-        + Agregar otro producto
-      </button>
-
-      {/* SUMMARY */}
-      <div style={{ background: '#1B3A8B', borderRadius: 12, padding: '14px 18px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-        {[['Inversión total', `$${totals.inv.toFixed(0)} USD`], ['Ganancia total', `$${f(totals.gain)} COP`], ['Recaudo total', `$${f(totals.rec)} COP`]].map(([l, v]) => (
-          <div key={l} style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.55)', marginBottom: 3 }}>{l}</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{v}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function Field({ label, children }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      <label style={{ fontSize: 11, color: '#666', fontWeight: 600 }}>{label}</label>
-      {children}
-    </div>
-  )
-}
-
-const inputStyle = {
-  background: '#fff', border: '1px solid #E2DED8', borderRadius: 8,
-  padding: '9px 12px', fontSize: 14, color: '#1a1a2e', width: '100%', outline: 'none'
-}
-
-
-
-const CORMORANT = "'Cormorant Garamond', Georgia, serif"
-const MONT = "'Montserrat', system-ui, sans-serif"
-
-function StoryGenerator() {
-  const [layout, setLayout] = useState('a')
-  const [imgs, setImgs] = useState({})
-  const [imgDims, setImgDims] = useState({})
-  const [bg, setBg] = useState('#F5F3EE')
-  const [fg, setFg] = useState('#141210')
-  const [form, setForm] = useState({ marca:'Nike', nombre:'530 Trainer', precio:'790.000', tallas:'36 · 37 · 38 · 39 · 40', tag:'New arrival', ig:'@americandirectstore' })
-  const [mf, setMf] = useState([{n:'',p:''},{n:'',p:''},{n:'',p:''},{n:'',p:''}])
-  const [exporting, setExporting] = useState(false)
-  const [result, setResult] = useState(null)
-  const cvRef = useRef(null)
-
-  function loadImg(file, key) {
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = e => {
-      const src = e.target.result
-      const img = new Image()
-      img.onload = () => { setImgDims(p=>({...p,[key]:{w:img.naturalWidth,h:img.naturalHeight}})); setImgs(p=>({...p,[key]:src})) }
-      img.src = src
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '14px 14px 20px',
+      maxWidth: 680,
+      margin: '0 auto'
     }
-    reader.readAsDataURL(file)
-  }
-
-  const a = (hex,op) => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${op})` }
-  const v = k => form[k]||''
-  const pH = () => { if(imgs.img1&&imgDims.img1){const r=imgDims.img1.h/imgDims.img1.w; return Math.min(Math.round(252*r),310)} return 260 }
-  const ph = pH()
-
-  async function doExport() {
-    if(!cvRef.current) return
-    setExporting(true)
-    try {
-      const scale=1080/252
-      const canvas=await html2canvas(cvRef.current,{scale,width:252,height:448,useCORS:true,allowTaint:true,backgroundColor:layout==='b'?'#111111':bg,logging:false,imageTimeout:15000})
-      setResult(canvas.toDataURL('image/jpeg',0.95))
-    } catch(e){alert('Error: '+e.message)}
-    setExporting(false)
-  }
-
-  function dl() {
-    if(!result) return
-    const el=document.createElement('a'); el.href=result; el.download=`historia_${v('marca').toLowerCase().replace(/\s+/g,'_')}.jpg`
-    document.body.appendChild(el); el.click(); setTimeout(()=>document.body.removeChild(el),200)
-  }
-
-  return (
-    <div style={{display:'flex',flexDirection:'column',height:'calc(100vh - 130px)',overflow:'hidden'}}>
-      <div style={{display:'flex',flex:1,minHeight:0,overflow:'hidden'}}>
-        {/* PANEL */}
-        <div style={{width:270,flexShrink:0,background:'#fff',borderRight:'1px solid #E8E5DF',overflowY:'auto',padding:'12px 13px 20px'}}>
-          <S>Diseño</S>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:10}}>
-            {[['a','◻ Premium'],['b','◼ Dark']].map(([id,l])=>(
-              <button key={id} onClick={()=>setLayout(id)} style={{padding:'8px 4px',border:`1.5px solid ${layout===id?'#0D1F4A':'#E2DED8'}`,borderRadius:7,background:layout===id?'#0D1F4A':'#fafafa',color:layout===id?'#fff':'#aaa',fontSize:10,fontWeight:700,cursor:'pointer'}}>{l}</button>
-            ))}
-            <button onClick={()=>setLayout('c')} style={{gridColumn:'span 2',padding:'8px 4px',border:`1.5px solid ${layout==='c'?'#0D1F4A':'#E2DED8'}`,borderRadius:7,background:layout==='c'?'#0D1F4A':'#fafafa',color:layout==='c'?'#fff':'#aaa',fontSize:10,fontWeight:700,cursor:'pointer'}}>⊞ Multi Producto</button>
-          </div>
-          <S>Foto principal</S>
-          <UB onFile={f=>loadImg(f,'img1')} prev={imgs.img1} label="Foto 1"/>
-          {layout==='c'&&<><S>Fotos 2, 3, 4</S><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:7}}>{[2,3,4].map(i=><UB key={i} onFile={f=>loadImg(f,`img${i}`)} prev={imgs[`img${i}`]} label={`Foto ${i}`} sm/>)}</div></>}
-          <S>Información</S>
-          {layout!=='c'
-            ?[['marca','Marca'],['nombre','Nombre'],['precio','Precio COP'],['tallas','Tallas'],['tag','Etiqueta'],['ig','Instagram']].map(([k,l])=>(
-              <div key={k} style={{marginBottom:6}}><label style={{display:'block',fontSize:10,color:'#aaa',fontWeight:600,marginBottom:2}}>{l}</label><input value={form[k]} onChange={e=>setForm(p=>({...p,[k]:e.target.value}))} style={{width:'100%',padding:'7px 9px',border:'1px solid #E2DED8',borderRadius:7,fontSize:12,color:'#1a1a2e',background:'#fafaf8',outline:'none'}}/></div>
-            ))
-            :<>{[['marca','Marca/título'],['tag','Etiqueta'],['ig','Instagram']].map(([k,l])=>(
-              <div key={k} style={{marginBottom:6}}><label style={{display:'block',fontSize:10,color:'#aaa',fontWeight:600,marginBottom:2}}>{l}</label><input value={form[k]} onChange={e=>setForm(p=>({...p,[k]:e.target.value}))} style={{width:'100%',padding:'7px 9px',border:'1px solid #E2DED8',borderRadius:7,fontSize:12,color:'#1a1a2e',background:'#fafaf8',outline:'none'}}/></div>
-            ))}<S>4 Productos</S>{mf.map((p,i)=>(
-              <div key={i} style={{border:'1px solid #E2DED8',borderRadius:8,padding:9,marginBottom:7}}>
-                <div style={{fontSize:9,fontWeight:700,color:'#0D1F4A',marginBottom:5}}>Producto {i+1}</div>
-                <UB onFile={f=>loadImg(f,`img${i+1}`)} prev={imgs[`img${i+1}`]} label={`Foto ${i+1}`} sm/>
-                {[['n','Nombre'],['p','Precio COP']].map(([k,l])=>(
-                  <div key={k} style={{marginBottom:4}}><label style={{fontSize:9,color:'#aaa',fontWeight:600}}>{l}</label><input value={p[k]} onChange={e=>{const nn=[...mf];nn[i]={...nn[i],[k]:e.target.value};setMf(nn)}} style={{display:'block',width:'100%',padding:'6px 8px',border:'1px solid #E2DED8',borderRadius:6,fontSize:12,color:'#1a1a2e',background:'#fafaf8',outline:'none',marginTop:2}}/></div>
-                ))}
-              </div>
-            ))}</>
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 12,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "TRM del d\xEDa (COP/USD)"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    value: trm,
+    onChange: e => setTrm(e.target.value),
+    style: inputStyle
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Redespacho Riohacha (USD total)"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    value: redespacho,
+    onChange: e => setRedespacho(e.target.value),
+    style: inputStyle
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      border: '1px solid #E2DED8',
+      borderRadius: 10,
+      padding: '12px 14px',
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: '#666',
+      fontWeight: 500,
+      whiteSpace: 'nowrap'
+    }
+  }, "Caja casillero:"), /*#__PURE__*/React.createElement("select", {
+    value: boxVal,
+    onChange: e => setBoxVal(e.target.value),
+    style: {
+      ...inputStyle,
+      flex: 1,
+      minWidth: 150
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "17"
+  }, "Hasta 3 lbs \u2014 $17"), /*#__PURE__*/React.createElement("option", {
+    value: "27"
+  }, "Hasta 5 lbs \u2014 $27"), /*#__PURE__*/React.createElement("option", {
+    value: "35"
+  }, "Hasta 10 lbs \u2014 $35")), /*#__PURE__*/React.createElement("button", {
+    onClick: autoDistribute,
+    style: {
+      padding: '8px 14px',
+      background: '#1B3A8B',
+      color: '#fff',
+      border: 'none',
+      borderRadius: 7,
+      fontSize: 12,
+      fontWeight: 600,
+      cursor: 'pointer',
+      whiteSpace: 'nowrap'
+    }
+  }, "\u21BB Distribuir env\xEDo")), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 10,
+      color: '#bbb',
+      marginTop: 8
+    }
+  }, "Distribuye el costo proporcionalmente. Puedes editar cada producto despu\xE9s.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: products.length > 1 ? '1fr 1fr' : '1fr',
+      gap: 12,
+      marginBottom: 12
+    }
+  }, products.map((p, i) => {
+    const c = calcProduct(p);
+    const badgeColor = c.mp >= 20 ? '#059669' : c.mp >= 12 ? '#d97706' : '#dc2626';
+    const badgeBg = c.mp >= 20 ? '#D1FAE5' : c.mp >= 12 ? '#FFF3CD' : '#FEE2E2';
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        background: '#fff',
+        border: '1px solid #E2DED8',
+        borderRadius: 12,
+        overflow: 'hidden'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: COLORS[i % 2],
+        padding: '12px 13px'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 9
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11,
+        fontWeight: 700,
+        color: 'rgba(255,255,255,.85)',
+        letterSpacing: '.05em'
+      }
+    }, "Producto ", i + 1), products.length > 1 && /*#__PURE__*/React.createElement("button", {
+      onClick: () => removeProduct(i),
+      style: {
+        background: 'none',
+        border: 'none',
+        color: 'rgba(255,255,255,.45)',
+        cursor: 'pointer',
+        fontSize: 15,
+        padding: '0 2px'
+      }
+    }, "\u2715")), [{
+      label: 'Precio',
+      field: 'price',
+      suffix: 'USD'
+    }, {
+      label: 'Envío casillero',
+      field: 'shipping',
+      suffix: 'USD'
+    }, {
+      label: 'Ganancia',
+      field: 'margin',
+      suffix: 'COP'
+    }].map(({
+      label,
+      field,
+      suffix
+    }) => /*#__PURE__*/React.createElement("div", {
+      key: field,
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        background: 'rgba(255,255,255,.15)',
+        borderRadius: 7,
+        padding: '6px 9px',
+        marginBottom: 6
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        color: 'rgba(255,255,255,.55)',
+        minWidth: 70,
+        fontWeight: 500
+      }
+    }, label), /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      value: p[field],
+      onChange: e => updateProduct(i, field, e.target.value),
+      placeholder: "0",
+      style: {
+        background: 'transparent',
+        border: 'none',
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 700,
+        flex: 1,
+        outline: 'none',
+        minWidth: 0,
+        textAlign: 'right'
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        color: 'rgba(255,255,255,.4)',
+        marginLeft: 5
+      }
+    }, suffix)))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: '11px 13px'
+      }
+    }, [['Precio USD', `$${n(p.price).toFixed(2)} USD`], ['Envío casillero', `−$${n(p.shipping).toFixed(2)} USD`], ['Redespacho', `−$${c.red.toFixed(2)} USD`], ...(c.applyCustoms ? [['Aduana (10%+IVA)', `−$${c.customs.toFixed(2)} USD`]] : [])].map(([l, v]) => /*#__PURE__*/React.createElement("div", {
+      key: l,
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontSize: 12,
+        padding: '3px 0',
+        borderBottom: '1px solid #F4F2EE',
+        color: v.includes('−') ? '#C8102E' : '#666'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: '#888'
+      }
+    }, l), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 500
+      }
+    }, v))), c.applyCustoms && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 10,
+        padding: '4px 7px',
+        borderRadius: 5,
+        background: '#FFF3CD',
+        color: '#856404',
+        margin: '4px 0'
+      }
+    }, "Aplica aduana \u2014 supera $200 USD"), !c.applyCustoms && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 10,
+        padding: '4px 7px',
+        borderRadius: 5,
+        background: '#D1FAE5',
+        color: '#065F46',
+        margin: '4px 0'
+      }
+    }, "Sin aduana \u2014 bajo $200 USD"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        padding: '6px 0 2px',
+        borderTop: '1px solid #eee',
+        marginTop: 4
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 12,
+        color: '#888'
+      }
+    }, "Costo en COP"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 13,
+        fontWeight: 700,
+        color: '#1B3A8B'
+      }
+    }, "$", f(c.costCOP))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 26,
+        fontWeight: 700,
+        color: '#1a1a2e',
+        textAlign: 'center',
+        margin: '8px 0 2px'
+      }
+    }, "$", f(c.sell)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: '#aaa',
+        textAlign: 'center',
+        marginBottom: 6
+      }
+    }, "precio de venta sugerido"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: '5px 10px',
+        borderRadius: 20,
+        fontSize: 10,
+        fontWeight: 600,
+        textAlign: 'center',
+        background: badgeBg,
+        color: badgeColor,
+        marginBottom: 8
+      }
+    }, "Margen ", c.mp.toFixed(1), "% \xB7 Ganancia $", f(n(p.margin)), " COP"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => copyPrice(i, c.sell),
+      style: {
+        width: '100%',
+        padding: 8,
+        background: 'transparent',
+        border: '1px solid #E2DED8',
+        borderRadius: 8,
+        fontSize: 12,
+        color: '#666',
+        cursor: 'pointer'
+      }
+    }, copied === i ? '¡Copiado!' : 'Copiar precio')));
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: addProduct,
+    style: {
+      width: '100%',
+      padding: 10,
+      background: 'transparent',
+      border: '1.5px dashed #d0d4dc',
+      borderRadius: 10,
+      fontSize: 13,
+      color: '#888',
+      cursor: 'pointer',
+      marginBottom: 14
+    }
+  }, "+ Agregar otro producto"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#1B3A8B',
+      borderRadius: 12,
+      padding: '14px 18px',
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr 1fr',
+      gap: 8
+    }
+  }, [['Inversión total', `$${totals.inv.toFixed(0)} USD`], ['Ganancia total', `$${f(totals.gain)} COP`], ['Recaudo total', `$${f(totals.rec)} COP`]].map(([l, v]) => /*#__PURE__*/React.createElement("div", {
+    key: l,
+    style: {
+      textAlign: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: 'rgba(255,255,255,.55)',
+      marginBottom: 3
+    }
+  }, l), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: '#fff'
+    }
+  }, v)))));
+}
+function Field({
+  label,
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 11,
+      color: '#666',
+      fontWeight: 600
+    }
+  }, label), children);
+}
+const inputStyle = {
+  background: '#fff',
+  border: '1px solid #E2DED8',
+  borderRadius: 8,
+  padding: '9px 12px',
+  fontSize: 14,
+  color: '#1a1a2e',
+  width: '100%',
+  outline: 'none'
+};</script>
+<script>const CORMORANT = "'Cormorant Garamond', Georgia, serif";
+const MONT = "'Montserrat', system-ui, sans-serif";
+function StoryGenerator() {
+  const [layout, setLayout] = useState('a');
+  const [imgs, setImgs] = useState({});
+  const [imgDims, setImgDims] = useState({});
+  const [bg, setBg] = useState('#F5F3EE');
+  const [fg, setFg] = useState('#141210');
+  const [form, setForm] = useState({
+    marca: 'Nike',
+    nombre: '530 Trainer',
+    precio: '790.000',
+    tallas: '36 · 37 · 38 · 39 · 40',
+    tag: 'New arrival',
+    ig: '@americandirectstore'
+  });
+  const [mf, setMf] = useState([{
+    n: '',
+    p: ''
+  }, {
+    n: '',
+    p: ''
+  }, {
+    n: '',
+    p: ''
+  }, {
+    n: '',
+    p: ''
+  }]);
+  const [exporting, setExporting] = useState(false);
+  const [result, setResult] = useState(null);
+  const cvRef = useRef(null);
+  function loadImg(file, key) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const src = e.target.result;
+      const img = new Image();
+      img.onload = () => {
+        setImgDims(p => ({
+          ...p,
+          [key]: {
+            w: img.naturalWidth,
+            h: img.naturalHeight
           }
-          <S>Fondo</S>
-          <div style={{display:'flex',gap:7,marginBottom:14}}>
-            {[['#F5F3EE','#141210'],['#ffffff','#141210'],['#F0EDE6','#141210'],['#1C1C1A','#F5F3EE'],['#0D1F4A','#F5F3EE']].map(([b,f])=>(
-              <div key={b} onClick={()=>{setBg(b);setFg(f)}} style={{width:26,height:26,borderRadius:'50%',background:b,border:`2.5px solid ${bg===b?'#1a1a2e':'transparent'}`,cursor:'pointer',boxShadow:'0 0 0 1px #E2DED8'}}/>
-            ))}
-          </div>
-          <button onClick={doExport} disabled={exporting} style={{width:'100%',padding:12,background:'#141210',color:'#fff',border:'none',borderRadius:8,fontSize:11,fontWeight:700,cursor:'pointer',letterSpacing:'.08em',textTransform:'uppercase'}}>
-            {exporting?'Generando...':'⬇ Generar imagen'}
-          </button>
-        </div>
-
-        {/* PREVIEW PHONE */}
-        <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',background:'#DEDAD5',padding:20}}>
-          <div style={{width:260,height:520,background:'#111',borderRadius:36,padding:8,boxShadow:'0 24px 60px rgba(0,0,0,.4)',flexShrink:0}}>
-            <div style={{width:'100%',height:'100%',borderRadius:29,overflow:'hidden',position:'relative'}}>
-              <div style={{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',width:60,height:10,background:'#111',borderRadius:'0 0 8px 8px',zIndex:30}}/>
-              <div ref={cvRef} style={{width:244,height:504,overflow:'hidden',position:'relative',fontFamily:CORMORANT,background:layout==='b'?'#111':bg}}>
-                {layout==='a'&&<>
-                  <div style={{position:'relative',width:'100%',height:ph,overflow:'hidden',background:bg,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    {imgs.img1?<img src={imgs.img1} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center top',display:'block'}} crossOrigin="anonymous"/>:<span style={{fontSize:10,color:'#bbb',fontFamily:MONT}}>↑ Subir foto</span>}
-                    <div style={{position:'absolute',bottom:0,left:0,right:0,height:70,background:`linear-gradient(transparent,${bg})`,pointerEvents:'none'}}/>
-                    <div style={{position:'absolute',top:0,left:0,right:0,padding:'12px 13px',display:'flex',justifyContent:'space-between',zIndex:2}}>
-                      <span style={{fontFamily:MONT,fontSize:6.5,fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',background:'rgba(255,255,255,.88)',color:'#141210',padding:'3px 7px',borderRadius:3}}>{v('ig')}</span>
-                      <span style={{fontFamily:MONT,fontSize:6,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',background:'#C8102E',color:'#fff',padding:'3px 7px',borderRadius:3}}>100% Original</span>
-                    </div>
-                    {v('tag')&&<span style={{position:'absolute',bottom:13,left:13,fontFamily:MONT,fontSize:6.5,fontWeight:600,letterSpacing:'.14em',textTransform:'uppercase',color:a(fg,.6)}}>{v('tag')}</span>}
-                  </div>
-                  <div style={{padding:'13px 15px 14px',display:'flex',flexDirection:'column',justifyContent:'space-between',height:`${504-ph}px`}}>
-                    <div>
-                      <div style={{fontFamily:MONT,fontSize:7,fontWeight:600,letterSpacing:'.24em',textTransform:'uppercase',color:a(fg,.38),marginBottom:4}}>{v('marca')}</div>
-                      <div style={{fontSize:28,fontWeight:300,lineHeight:1.0,color:fg,marginBottom:10}}>{v('nombre')}</div>
-                      <div style={{display:'flex',alignItems:'baseline',gap:5,marginBottom:6}}>
-                        <span style={{fontSize:30,fontWeight:400,color:fg}}>${v('precio')}</span>
-                        <span style={{fontFamily:MONT,fontSize:8,color:a(fg,.38)}}>COP</span>
-                      </div>
-                      <div style={{width:26,height:1.5,background:a(fg,.15),marginBottom:8}}/>
-                      <div style={{fontFamily:MONT,fontSize:7,letterSpacing:'.07em',color:a(fg,.42)}}>{v('tallas')}</div>
-                    </div>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                      <span style={{fontFamily:MONT,fontSize:7,fontWeight:700,letterSpacing:'.18em',textTransform:'uppercase',borderBottom:`1.5px solid ${a(fg,.35)}`,paddingBottom:2,color:fg}}>Pedir por DM</span>
-                      <span style={{opacity:.3,fontSize:14}}>→</span>
-                    </div>
-                  </div>
-                </>}
-                {layout==='b'&&<>
-                  <div style={{position:'absolute',inset:0}}>
-                    {imgs.img1?<img src={imgs.img1} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center'}} crossOrigin="anonymous"/>:<div style={{width:'100%',height:'100%',background:'#1C1C1A',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,color:'#444',fontFamily:MONT}}>↑ Subir foto</div>}
-                  </div>
-                  <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,0,0,.05) 0%,rgba(0,0,0,.1) 35%,rgba(0,0,0,.78) 65%,rgba(0,0,0,.94) 100%)'}}/>
-                  <div style={{position:'absolute',top:0,left:0,right:0,height:4,background:'#C8102E'}}/>
-                  <div style={{position:'absolute',top:12,left:0,right:0,padding:'0 13px',display:'flex',justifyContent:'space-between',zIndex:3}}>
-                    <span style={{fontFamily:MONT,fontSize:6.5,fontWeight:600,letterSpacing:'.12em',textTransform:'uppercase',color:'rgba(255,255,255,.6)'}}>{v('ig')}</span>
-                    <span style={{fontFamily:MONT,fontSize:6.5,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',background:'#C8102E',color:'#fff',padding:'3px 7px',borderRadius:3}}>{v('tag')||'Flash Sale'}</span>
-                  </div>
-                  <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'16px 17px 18px'}}>
-                    <div style={{fontFamily:MONT,fontSize:7,fontWeight:600,letterSpacing:'.24em',textTransform:'uppercase',color:'rgba(255,255,255,.38)',marginBottom:3}}>{v('marca')}</div>
-                    <div style={{fontSize:30,fontWeight:300,color:'#fff',lineHeight:1.0,marginBottom:11}}>{v('nombre')}</div>
-                    <div style={{fontSize:38,fontWeight:400,color:'#fff',lineHeight:1}}>${v('precio')}</div>
-                    <span style={{fontFamily:MONT,fontSize:8,color:'rgba(255,255,255,.32)',letterSpacing:'.1em',display:'block',margin:'2px 0 10px'}}>COP</span>
-                    <div style={{width:'100%',height:1,background:'rgba(255,255,255,.1)',marginBottom:9}}/>
-                    <div style={{display:'flex',justifyContent:'space-between'}}>
-                      <span style={{fontFamily:MONT,fontSize:7,color:'rgba(255,255,255,.42)',letterSpacing:'.07em'}}>{v('tallas')}</span>
-                      <span style={{fontFamily:MONT,fontSize:6.5,fontWeight:700,color:'rgba(255,255,255,.42)',letterSpacing:'.12em',textTransform:'uppercase'}}>Pedir por DM</span>
-                    </div>
-                  </div>
-                </>}
-                {layout==='c'&&(
-                  <div style={{display:'flex',flexDirection:'column',padding:'13px 12px 11px',height:'100%',background:bg}}>
-                    <div style={{fontFamily:MONT,fontSize:6.5,fontWeight:700,letterSpacing:'.22em',textTransform:'uppercase',textAlign:'center',color:a(fg,.38),marginBottom:3}}>{v('tag')||'American Direct'}</div>
-                    <div style={{fontSize:20,fontWeight:300,fontStyle:'italic',textAlign:'center',color:fg,lineHeight:1.1,marginBottom:2}}>{v('marca')}</div>
-                    <div style={{fontFamily:MONT,fontSize:6,fontWeight:600,letterSpacing:'.14em',textTransform:'uppercase',textAlign:'center',color:a(fg,.38),marginBottom:9}}>100% Original · Envío USA</div>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,flex:1,minHeight:0}}>
-                      {[1,2,3,4].map(i=>{
-                        const p=mf[i-1]
-                        return(<div key={i} style={{display:'flex',flexDirection:'column'}}>
-                          <div style={{borderRadius:7,overflow:'hidden',flex:1,minHeight:0,background:'#E8E6E0',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:4}}>
-                            {imgs[`img${i}`]?<img src={imgs[`img${i}`]} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center'}} crossOrigin="anonymous"/>:<span style={{fontSize:9,color:'#bbb',fontFamily:MONT}}>+ foto {i}</span>}
-                          </div>
-                          <div style={{fontFamily:MONT,fontSize:6,letterSpacing:'.06em',color:a(fg,.42)}}>{p.n}</div>
-                          <div style={{fontSize:14,fontWeight:300,color:fg}}>{p.p?`$${p.p}`:''}</div>
-                        </div>)
-                      })}
-                    </div>
-                    <div style={{marginTop:7,textAlign:'center',fontFamily:MONT,fontSize:6,letterSpacing:'.1em',textTransform:'uppercase',color:a(fg,.38)}}>{v('ig')} · Pedidos por DM</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {result&&(
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.92)',zIndex:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:20}}>
-          <img src={result} style={{maxWidth:'100%',maxHeight:'72vh',borderRadius:8}} alt="historia"/>
-          <p style={{color:'#fff',fontSize:12,fontFamily:MONT,textAlign:'center',margin:'16px 0',opacity:.8,lineHeight:1.8}}>
-            <strong>iPhone/iPad:</strong> mantén presionada la imagen → "Añadir a Fotos"<br/>
-            <strong>Computador:</strong> clic derecho → "Guardar imagen como..."
-          </p>
-          <div style={{display:'flex',gap:10}}>
-            <button onClick={dl} style={{padding:'10px 28px',background:'#fff',border:'none',borderRadius:7,fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:MONT}}>⬇ Descargar</button>
-            <button onClick={()=>setResult(null)} style={{padding:'10px 28px',background:'transparent',border:'1.5px solid rgba(255,255,255,.35)',borderRadius:7,fontSize:12,fontWeight:600,color:'#fff',cursor:'pointer',fontFamily:MONT}}>Cerrar</button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+        }));
+        setImgs(p => ({
+          ...p,
+          [key]: src
+        }));
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+  }
+  const a = (hex, op) => {
+    const r = parseInt(hex.slice(1, 3), 16),
+      g = parseInt(hex.slice(3, 5), 16),
+      b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${op})`;
+  };
+  const v = k => form[k] || '';
+  const pH = () => {
+    if (imgs.img1 && imgDims.img1) {
+      const r = imgDims.img1.h / imgDims.img1.w;
+      return Math.min(Math.round(252 * r), 310);
+    }
+    return 260;
+  };
+  const ph = pH();
+  async function doExport() {
+    if (!cvRef.current) return;
+    setExporting(true);
+    try {
+      const scale = 1080 / 252;
+      const canvas = await html2canvas(cvRef.current, {
+        scale,
+        width: 252,
+        height: 448,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: layout === 'b' ? '#111111' : bg,
+        logging: false,
+        imageTimeout: 15000
+      });
+      setResult(canvas.toDataURL('image/jpeg', 0.95));
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+    setExporting(false);
+  }
+  function dl() {
+    if (!result) return;
+    const el = document.createElement('a');
+    el.href = result;
+    el.download = `historia_${v('marca').toLowerCase().replace(/\s+/g, '_')}.jpg`;
+    document.body.appendChild(el);
+    el.click();
+    setTimeout(() => document.body.removeChild(el), 200);
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      height: 'calc(100vh - 130px)',
+      overflow: 'hidden'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flex: 1,
+      minHeight: 0,
+      overflow: 'hidden'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 270,
+      flexShrink: 0,
+      background: '#fff',
+      borderRight: '1px solid #E8E5DF',
+      overflowY: 'auto',
+      padding: '12px 13px 20px'
+    }
+  }, /*#__PURE__*/React.createElement(S, null, "Dise\xF1o"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 6,
+      marginBottom: 10
+    }
+  }, [['a', '◻ Premium'], ['b', '◼ Dark']].map(([id, l]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    onClick: () => setLayout(id),
+    style: {
+      padding: '8px 4px',
+      border: `1.5px solid ${layout === id ? '#0D1F4A' : '#E2DED8'}`,
+      borderRadius: 7,
+      background: layout === id ? '#0D1F4A' : '#fafafa',
+      color: layout === id ? '#fff' : '#aaa',
+      fontSize: 10,
+      fontWeight: 700,
+      cursor: 'pointer'
+    }
+  }, l)), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setLayout('c'),
+    style: {
+      gridColumn: 'span 2',
+      padding: '8px 4px',
+      border: `1.5px solid ${layout === 'c' ? '#0D1F4A' : '#E2DED8'}`,
+      borderRadius: 7,
+      background: layout === 'c' ? '#0D1F4A' : '#fafafa',
+      color: layout === 'c' ? '#fff' : '#aaa',
+      fontSize: 10,
+      fontWeight: 700,
+      cursor: 'pointer'
+    }
+  }, "\u229E Multi Producto")), /*#__PURE__*/React.createElement(S, null, "Foto principal"), /*#__PURE__*/React.createElement(UB, {
+    onFile: f => loadImg(f, 'img1'),
+    prev: imgs.img1,
+    label: "Foto 1"
+  }), layout === 'c' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(S, null, "Fotos 2, 3, 4"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 7
+    }
+  }, [2, 3, 4].map(i => /*#__PURE__*/React.createElement(UB, {
+    key: i,
+    onFile: f => loadImg(f, `img${i}`),
+    prev: imgs[`img${i}`],
+    label: `Foto ${i}`,
+    sm: true
+  })))), /*#__PURE__*/React.createElement(S, null, "Informaci\xF3n"), layout !== 'c' ? [['marca', 'Marca'], ['nombre', 'Nombre'], ['precio', 'Precio COP'], ['tallas', 'Tallas'], ['tag', 'Etiqueta'], ['ig', 'Instagram']].map(([k, l]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    style: {
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: 'block',
+      fontSize: 10,
+      color: '#aaa',
+      fontWeight: 600,
+      marginBottom: 2
+    }
+  }, l), /*#__PURE__*/React.createElement("input", {
+    value: form[k],
+    onChange: e => setForm(p => ({
+      ...p,
+      [k]: e.target.value
+    })),
+    style: {
+      width: '100%',
+      padding: '7px 9px',
+      border: '1px solid #E2DED8',
+      borderRadius: 7,
+      fontSize: 12,
+      color: '#1a1a2e',
+      background: '#fafaf8',
+      outline: 'none'
+    }
+  }))) : /*#__PURE__*/React.createElement(React.Fragment, null, [['marca', 'Marca/título'], ['tag', 'Etiqueta'], ['ig', 'Instagram']].map(([k, l]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    style: {
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: 'block',
+      fontSize: 10,
+      color: '#aaa',
+      fontWeight: 600,
+      marginBottom: 2
+    }
+  }, l), /*#__PURE__*/React.createElement("input", {
+    value: form[k],
+    onChange: e => setForm(p => ({
+      ...p,
+      [k]: e.target.value
+    })),
+    style: {
+      width: '100%',
+      padding: '7px 9px',
+      border: '1px solid #E2DED8',
+      borderRadius: 7,
+      fontSize: 12,
+      color: '#1a1a2e',
+      background: '#fafaf8',
+      outline: 'none'
+    }
+  }))), /*#__PURE__*/React.createElement(S, null, "4 Productos"), mf.map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      border: '1px solid #E2DED8',
+      borderRadius: 8,
+      padding: 9,
+      marginBottom: 7
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      color: '#0D1F4A',
+      marginBottom: 5
+    }
+  }, "Producto ", i + 1), /*#__PURE__*/React.createElement(UB, {
+    onFile: f => loadImg(f, `img${i + 1}`),
+    prev: imgs[`img${i + 1}`],
+    label: `Foto ${i + 1}`,
+    sm: true
+  }), [['n', 'Nombre'], ['p', 'Precio COP']].map(([k, l]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    style: {
+      marginBottom: 4
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 9,
+      color: '#aaa',
+      fontWeight: 600
+    }
+  }, l), /*#__PURE__*/React.createElement("input", {
+    value: p[k],
+    onChange: e => {
+      const nn = [...mf];
+      nn[i] = {
+        ...nn[i],
+        [k]: e.target.value
+      };
+      setMf(nn);
+    },
+    style: {
+      display: 'block',
+      width: '100%',
+      padding: '6px 8px',
+      border: '1px solid #E2DED8',
+      borderRadius: 6,
+      fontSize: 12,
+      color: '#1a1a2e',
+      background: '#fafaf8',
+      outline: 'none',
+      marginTop: 2
+    }
+  })))))), /*#__PURE__*/React.createElement(S, null, "Fondo"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 7,
+      marginBottom: 14
+    }
+  }, [['#F5F3EE', '#141210'], ['#ffffff', '#141210'], ['#F0EDE6', '#141210'], ['#1C1C1A', '#F5F3EE'], ['#0D1F4A', '#F5F3EE']].map(([b, f]) => /*#__PURE__*/React.createElement("div", {
+    key: b,
+    onClick: () => {
+      setBg(b);
+      setFg(f);
+    },
+    style: {
+      width: 26,
+      height: 26,
+      borderRadius: '50%',
+      background: b,
+      border: `2.5px solid ${bg === b ? '#1a1a2e' : 'transparent'}`,
+      cursor: 'pointer',
+      boxShadow: '0 0 0 1px #E2DED8'
+    }
+  }))), /*#__PURE__*/React.createElement("button", {
+    onClick: doExport,
+    disabled: exporting,
+    style: {
+      width: '100%',
+      padding: 12,
+      background: '#141210',
+      color: '#fff',
+      border: 'none',
+      borderRadius: 8,
+      fontSize: 11,
+      fontWeight: 700,
+      cursor: 'pointer',
+      letterSpacing: '.08em',
+      textTransform: 'uppercase'
+    }
+  }, exporting ? 'Generando...' : '⬇ Generar imagen')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#DEDAD5',
+      padding: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 260,
+      height: 520,
+      background: '#111',
+      borderRadius: 36,
+      padding: 8,
+      boxShadow: '0 24px 60px rgba(0,0,0,.4)',
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 29,
+      overflow: 'hidden',
+      position: 'relative'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      top: 0,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: 60,
+      height: 10,
+      background: '#111',
+      borderRadius: '0 0 8px 8px',
+      zIndex: 30
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    ref: cvRef,
+    style: {
+      width: 244,
+      height: 504,
+      overflow: 'hidden',
+      position: 'relative',
+      fontFamily: CORMORANT,
+      background: layout === 'b' ? '#111' : bg
+    }
+  }, layout === 'a' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'relative',
+      width: '100%',
+      height: ph,
+      overflow: 'hidden',
+      background: bg,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
+  }, imgs.img1 ? /*#__PURE__*/React.createElement("img", {
+    src: imgs.img1,
+    style: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      objectPosition: 'center top',
+      display: 'block'
+    },
+    crossOrigin: "anonymous"
+  }) : /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 10,
+      color: '#bbb',
+      fontFamily: MONT
+    }
+  }, "\u2191 Subir foto"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 70,
+      background: `linear-gradient(transparent,${bg})`,
+      pointerEvents: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      padding: '12px 13px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      zIndex: 2
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 6.5,
+      fontWeight: 700,
+      letterSpacing: '.12em',
+      textTransform: 'uppercase',
+      background: 'rgba(255,255,255,.88)',
+      color: '#141210',
+      padding: '3px 7px',
+      borderRadius: 3
+    }
+  }, v('ig')), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 6,
+      fontWeight: 700,
+      letterSpacing: '.1em',
+      textTransform: 'uppercase',
+      background: '#C8102E',
+      color: '#fff',
+      padding: '3px 7px',
+      borderRadius: 3
+    }
+  }, "100% Original")), v('tag') && /*#__PURE__*/React.createElement("span", {
+    style: {
+      position: 'absolute',
+      bottom: 13,
+      left: 13,
+      fontFamily: MONT,
+      fontSize: 6.5,
+      fontWeight: 600,
+      letterSpacing: '.14em',
+      textTransform: 'uppercase',
+      color: a(fg, .6)
+    }
+  }, v('tag'))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '13px 15px 14px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      height: `${504 - ph}px`
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 7,
+      fontWeight: 600,
+      letterSpacing: '.24em',
+      textTransform: 'uppercase',
+      color: a(fg, .38),
+      marginBottom: 4
+    }
+  }, v('marca')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 28,
+      fontWeight: 300,
+      lineHeight: 1.0,
+      color: fg,
+      marginBottom: 10
+    }
+  }, v('nombre')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'baseline',
+      gap: 5,
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 30,
+      fontWeight: 400,
+      color: fg
+    }
+  }, "$", v('precio')), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 8,
+      color: a(fg, .38)
+    }
+  }, "COP")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 26,
+      height: 1.5,
+      background: a(fg, .15),
+      marginBottom: 8
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 7,
+      letterSpacing: '.07em',
+      color: a(fg, .42)
+    }
+  }, v('tallas'))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 7,
+      fontWeight: 700,
+      letterSpacing: '.18em',
+      textTransform: 'uppercase',
+      borderBottom: `1.5px solid ${a(fg, .35)}`,
+      paddingBottom: 2,
+      color: fg
+    }
+  }, "Pedir por DM"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      opacity: .3,
+      fontSize: 14
+    }
+  }, "\u2192")))), layout === 'b' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      inset: 0
+    }
+  }, imgs.img1 ? /*#__PURE__*/React.createElement("img", {
+    src: imgs.img1,
+    style: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      objectPosition: 'center'
+    },
+    crossOrigin: "anonymous"
+  }) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '100%',
+      height: '100%',
+      background: '#1C1C1A',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: 9,
+      color: '#444',
+      fontFamily: MONT
+    }
+  }, "\u2191 Subir foto")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      inset: 0,
+      background: 'linear-gradient(to bottom,rgba(0,0,0,.05) 0%,rgba(0,0,0,.1) 35%,rgba(0,0,0,.78) 65%,rgba(0,0,0,.94) 100%)'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 4,
+      background: '#C8102E'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      top: 12,
+      left: 0,
+      right: 0,
+      padding: '0 13px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      zIndex: 3
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 6.5,
+      fontWeight: 600,
+      letterSpacing: '.12em',
+      textTransform: 'uppercase',
+      color: 'rgba(255,255,255,.6)'
+    }
+  }, v('ig')), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 6.5,
+      fontWeight: 700,
+      letterSpacing: '.1em',
+      textTransform: 'uppercase',
+      background: '#C8102E',
+      color: '#fff',
+      padding: '3px 7px',
+      borderRadius: 3
+    }
+  }, v('tag') || 'Flash Sale')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: '16px 17px 18px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 7,
+      fontWeight: 600,
+      letterSpacing: '.24em',
+      textTransform: 'uppercase',
+      color: 'rgba(255,255,255,.38)',
+      marginBottom: 3
+    }
+  }, v('marca')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 30,
+      fontWeight: 300,
+      color: '#fff',
+      lineHeight: 1.0,
+      marginBottom: 11
+    }
+  }, v('nombre')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 38,
+      fontWeight: 400,
+      color: '#fff',
+      lineHeight: 1
+    }
+  }, "$", v('precio')), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 8,
+      color: 'rgba(255,255,255,.32)',
+      letterSpacing: '.1em',
+      display: 'block',
+      margin: '2px 0 10px'
+    }
+  }, "COP"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '100%',
+      height: 1,
+      background: 'rgba(255,255,255,.1)',
+      marginBottom: 9
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 7,
+      color: 'rgba(255,255,255,.42)',
+      letterSpacing: '.07em'
+    }
+  }, v('tallas')), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 6.5,
+      fontWeight: 700,
+      color: 'rgba(255,255,255,.42)',
+      letterSpacing: '.12em',
+      textTransform: 'uppercase'
+    }
+  }, "Pedir por DM")))), layout === 'c' && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '13px 12px 11px',
+      height: '100%',
+      background: bg
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 6.5,
+      fontWeight: 700,
+      letterSpacing: '.22em',
+      textTransform: 'uppercase',
+      textAlign: 'center',
+      color: a(fg, .38),
+      marginBottom: 3
+    }
+  }, v('tag') || 'American Direct'), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 20,
+      fontWeight: 300,
+      fontStyle: 'italic',
+      textAlign: 'center',
+      color: fg,
+      lineHeight: 1.1,
+      marginBottom: 2
+    }
+  }, v('marca')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: MONT,
+      fontSize: 6,
+      fontWeight: 600,
+      letterSpacing: '.14em',
+      textTransform: 'uppercase',
+      textAlign: 'center',
+      color: a(fg, .38),
+      marginBottom: 9
+    }
+  }, "100% Original \xB7 Env\xEDo USA"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 8,
+      flex: 1,
+      minHeight: 0
+    }
+  }, [1, 2, 3, 4].map(i => {
+    const p = mf[i - 1];
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        borderRadius: 7,
+        overflow: 'hidden',
+        flex: 1,
+        minHeight: 0,
+        background: '#E8E6E0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 4
+      }
+    }, imgs[`img${i}`] ? /*#__PURE__*/React.createElement("img", {
+      src: imgs[`img${i}`],
+      style: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        objectPosition: 'center'
+      },
+      crossOrigin: "anonymous"
+    }) : /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 9,
+        color: '#bbb',
+        fontFamily: MONT
+      }
+    }, "+ foto ", i)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: MONT,
+        fontSize: 6,
+        letterSpacing: '.06em',
+        color: a(fg, .42)
+      }
+    }, p.n), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 14,
+        fontWeight: 300,
+        color: fg
+      }
+    }, p.p ? `$${p.p}` : ''));
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 7,
+      textAlign: 'center',
+      fontFamily: MONT,
+      fontSize: 6,
+      letterSpacing: '.1em',
+      textTransform: 'uppercase',
+      color: a(fg, .38)
+    }
+  }, v('ig'), " \xB7 Pedidos por DM"))))))), result && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,.92)',
+      zIndex: 100,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: result,
+    style: {
+      maxWidth: '100%',
+      maxHeight: '72vh',
+      borderRadius: 8
+    },
+    alt: "historia"
+  }), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: '#fff',
+      fontSize: 12,
+      fontFamily: MONT,
+      textAlign: 'center',
+      margin: '16px 0',
+      opacity: .8,
+      lineHeight: 1.8
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "iPhone/iPad:"), " mant\xE9n presionada la imagen \u2192 \"A\xF1adir a Fotos\"", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("strong", null, "Computador:"), " clic derecho \u2192 \"Guardar imagen como...\""), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: dl,
+    style: {
+      padding: '10px 28px',
+      background: '#fff',
+      border: 'none',
+      borderRadius: 7,
+      fontSize: 12,
+      fontWeight: 700,
+      cursor: 'pointer',
+      fontFamily: MONT
+    }
+  }, "\u2B07 Descargar"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setResult(null),
+    style: {
+      padding: '10px 28px',
+      background: 'transparent',
+      border: '1.5px solid rgba(255,255,255,.35)',
+      borderRadius: 7,
+      fontSize: 12,
+      fontWeight: 600,
+      color: '#fff',
+      cursor: 'pointer',
+      fontFamily: MONT
+    }
+  }, "Cerrar"))));
 }
-const S=({children})=><div style={{fontSize:9,fontWeight:700,letterSpacing:'.14em',color:'#bbb',textTransform:'uppercase',margin:'12px 0 6px',fontFamily:"'Montserrat',sans-serif"}}>{children}</div>
-const UB=({onFile,prev,label,sm})=>(
-  <div style={{border:'1.5px dashed #E2DED8',borderRadius:8,padding:sm?9:13,textAlign:'center',cursor:'pointer',background:'#fafafa',position:'relative',marginBottom:sm?0:7}}>
-    <input type="file" accept="image/*" onChange={e=>onFile(e.target.files[0])} style={{position:'absolute',inset:0,opacity:0,cursor:'pointer',width:'100%',height:'100%'}}/>
-    {prev?<img src={prev} style={{width:'100%',height:sm?42:58,objectFit:'contain',borderRadius:4}}/>:<div style={{fontSize:sm?10:11,color:'#ccc'}}>{sm?`+ ${label}`:`↑ ${label}`}</div>}
-  </div>
-)
-
-
-
-const TABS = [
-  { id: 'dashboard', icon: '📊', label: 'Dashboard' },
-  { id: 'calculadora', icon: '🧮', label: 'Calculadora' },
-  { id: 'stories', icon: '📸', label: 'Historias' },
-]
-
+const S = ({
+  children
+}) => /*#__PURE__*/React.createElement("div", {
+  style: {
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: '.14em',
+    color: '#bbb',
+    textTransform: 'uppercase',
+    margin: '12px 0 6px',
+    fontFamily: "'Montserrat',sans-serif"
+  }
+}, children);
+const UB = ({
+  onFile,
+  prev,
+  label,
+  sm
+}) => /*#__PURE__*/React.createElement("div", {
+  style: {
+    border: '1.5px dashed #E2DED8',
+    borderRadius: 8,
+    padding: sm ? 9 : 13,
+    textAlign: 'center',
+    cursor: 'pointer',
+    background: '#fafafa',
+    position: 'relative',
+    marginBottom: sm ? 0 : 7
+  }
+}, /*#__PURE__*/React.createElement("input", {
+  type: "file",
+  accept: "image/*",
+  onChange: e => onFile(e.target.files[0]),
+  style: {
+    position: 'absolute',
+    inset: 0,
+    opacity: 0,
+    cursor: 'pointer',
+    width: '100%',
+    height: '100%'
+  }
+}), prev ? /*#__PURE__*/React.createElement("img", {
+  src: prev,
+  style: {
+    width: '100%',
+    height: sm ? 42 : 58,
+    objectFit: 'contain',
+    borderRadius: 4
+  }
+}) : /*#__PURE__*/React.createElement("div", {
+  style: {
+    fontSize: sm ? 10 : 11,
+    color: '#ccc'
+  }
+}, sm ? `+ ${label}` : `↑ ${label}`));</script>
+<script>const TABS = [{
+  id: 'dashboard',
+  icon: '📊',
+  label: 'Dashboard'
+}, {
+  id: 'calculadora',
+  icon: '🧮',
+  label: 'Calculadora'
+}, {
+  id: 'stories',
+  icon: '📸',
+  label: 'Historias'
+}];
 function App() {
-  const [tab, setTab] = React.useState('dashboard')
-  return (
-    <div style={{ minHeight: '100vh', background: '#F5F3EE', paddingBottom: 70 }}>
-      <div style={{ background: '#0D1F4A', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10, position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#C8102E', flexShrink: 0 }} />
-        <span style={{ color: 'rgba(255,255,255,.8)', fontSize: 12, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase' }}>American Direct</span>
-        <span style={{ marginLeft: 'auto', color: 'rgba(255,255,255,.35)', fontSize: 10, letterSpacing: '.1em', textTransform: 'uppercase' }}>
-          {TABS.find(t => t.id === tab)?.label}
-        </span>
-      </div>
-      <div style={{ display: tab === 'dashboard' ? 'block' : 'none' }}><Dashboard /></div>
-      <div style={{ display: tab === 'calculadora' ? 'block' : 'none' }}><Calculadora /></div>
-      <div style={{ display: tab === 'stories' ? 'block' : 'none' }}><StoryGenerator /></div>
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: '1px solid #E8E5DF', display: 'flex', height: 64, zIndex: 50, boxShadow: '0 -4px 20px rgba(0,0,0,.06)' }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, border: 'none', cursor: 'pointer', background: 'none', borderTop: tab === t.id ? '2.5px solid #0D1F4A' : '2.5px solid transparent' }}>
-            <span style={{ fontSize: 20 }}>{t.icon}</span>
-            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: tab === t.id ? '#0D1F4A' : '#bbb' }}>{t.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
+  const [tab, setTab] = React.useState('dashboard');
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: '100vh',
+      background: '#F5F3EE',
+      paddingBottom: 70
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#0D1F4A',
+      padding: '14px 18px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      position: 'sticky',
+      top: 0,
+      zIndex: 50
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 7,
+      height: 7,
+      borderRadius: '50%',
+      background: '#C8102E'
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'rgba(255,255,255,.8)',
+      fontSize: 12,
+      fontWeight: 700,
+      letterSpacing: '.14em',
+      textTransform: 'uppercase'
+    }
+  }, "American Direct"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      marginLeft: 'auto',
+      color: 'rgba(255,255,255,.35)',
+      fontSize: 10,
+      textTransform: 'uppercase'
+    }
+  }, TABS.find(t => t.id === tab)?.label)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: tab === 'dashboard' ? 'block' : 'none'
+    }
+  }, /*#__PURE__*/React.createElement(Dashboard, null)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: tab === 'calculadora' ? 'block' : 'none'
+    }
+  }, /*#__PURE__*/React.createElement(Calculadora, null)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: tab === 'stories' ? 'block' : 'none'
+    }
+  }, /*#__PURE__*/React.createElement(StoryGenerator, null)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      background: '#fff',
+      borderTop: '1px solid #E8E5DF',
+      display: 'flex',
+      height: 64,
+      zIndex: 50,
+      boxShadow: '0 -4px 20px rgba(0,0,0,.06)'
+    }
+  }, TABS.map(t => /*#__PURE__*/React.createElement("button", {
+    key: t.id,
+    onClick: () => setTab(t.id),
+    style: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      border: 'none',
+      cursor: 'pointer',
+      background: 'none',
+      borderTop: tab === t.id ? '2.5px solid #0D1F4A' : '2.5px solid transparent'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 20
+    }
+  }, t.icon), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: '.08em',
+      textTransform: 'uppercase',
+      color: tab === t.id ? '#0D1F4A' : '#bbb'
+    }
+  }, t.label)))));
 }
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App />)
-
-</script>
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));</script>
 </body>
 </html>
